@@ -1,0 +1,461 @@
+/* =============================================================
+   Skippers Electronics & General Suppliers — style.css
+   Loaded AFTER the inline <style> block in index.html.
+   Every rule is scoped under .sk-app (or an sk-* hook) so it
+   safely overrides the precompiled utility classes without
+   touching any JavaScript, Supabase or admin logic.
+
+   Contents
+   1.  Design tokens
+   2.  Base & typography
+   3.  Header & logo
+   4.  Info bar
+   5.  Search, category chips, buttons
+   6.  Product grid & cards
+   7.  Listing detail (price, actions, payment panel)
+   8.  Chat & reviews
+   9.  Forms, sell form & admin login
+   10. Admin panel
+   11. Toast, loading & empty states
+   12. Responsive: tablet / desktop / large
+   13. Accessibility & reduced motion
+   ============================================================= */
+
+/* 1. Design tokens ------------------------------------------- */
+:root {
+  --sk-bg: #0b1220;
+  --sk-surface: #0f1b2d;
+  --sk-surface-2: #15233a;
+  --sk-border: #1c2c42;
+  --sk-border-strong: #22344f;
+  --sk-text: #e8eef5;
+  --sk-text-muted: #9fb3cc;
+  --sk-text-dim: #7c8ba0;
+  --sk-cyan: #3dd6f5;
+  --sk-cyan-hover: #5fe0f8;
+  --sk-amber: #f5a623;
+  --sk-danger: #f56b5c;
+  --sk-radius: 12px;
+  --sk-radius-sm: 8px;
+  --sk-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  --sk-tap: 44px; /* minimum touch target */
+}
+
+/* 2. Base & typography --------------------------------------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  overflow-x: hidden; /* guards against sideways scroll on phones */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.sk-app {
+  font-feature-settings: "cv11", "ss01";
+  line-height: 1.55;
+}
+.sk-app ::selection {
+  background: rgba(61, 214, 245, 0.28);
+}
+.sk-app img,
+.sk-app svg {
+  max-width: 100%;
+}
+.sk-app h1 {
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+/* Prices and numbers line up nicely */
+.sk-app .font-mono {
+  font-variant-numeric: tabular-nums;
+}
+/* Thin, unobtrusive scrollbars (chat, reviews, chips) */
+.sk-app * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sk-border-strong) transparent;
+}
+
+/* 3. Header & logo ------------------------------------------- */
+.sk-app .sk-header {
+  padding-top: env(safe-area-inset-top, 0);
+  background: rgba(11, 18, 32, 0.92);
+  box-shadow: 0 1px 0 rgba(61, 214, 245, 0.12), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+/* The logo image is a fixed-height PNG: never stretch it. */
+.sk-app .sk-header img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 48px;
+}
+
+/* 4. Info bar (address / hours / phone) ---------------------- */
+.sk-app .sk-infobar {
+  font-size: 0.8125rem;
+}
+.sk-app .sk-infobar a {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 5. Search, category chips, buttons ------------------------- */
+.sk-app .sk-search {
+  min-height: var(--sk-tap);
+  font-size: 16px; /* stops iOS zooming into the field */
+  border-radius: var(--sk-radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sk-app .sk-search:focus {
+  border-color: var(--sk-cyan);
+}
+
+/* Chips scroll sideways inside their own row, never the page */
+.sk-app .sk-chip {
+  min-height: 36px;
+  padding-inline: 14px;
+  scroll-snap-align: start;
+}
+.sk-app .sk-chip:active {
+  transform: scale(0.97);
+}
+
+/* Large call-to-action buttons everywhere get a proper tap size */
+.sk-app button[class*="py-3"],
+.sk-app a[class*="py-3"],
+.sk-app a[class*="py-2.5"],
+.sk-app button[class*="py-2.5"] {
+  min-height: var(--sk-tap);
+  border-radius: var(--sk-radius-sm);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, transform 0.1s ease;
+}
+.sk-app button[class*="py-3"]:active,
+.sk-app a[class*="py-3"]:active {
+  transform: translateY(1px);
+}
+.sk-app button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 6. Product grid & cards ------------------------------------ */
+.sk-app .sk-grid {
+  gap: 14px;
+}
+.sk-app .sk-card {
+  min-height: 168px;
+  padding: 16px;
+  border-radius: var(--sk-radius);
+  background: linear-gradient(180deg, #11203a 0%, var(--sk-surface) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  contain: layout paint; /* keeps repaint cheap, no layout shift */
+}
+.sk-app .sk-card:hover {
+  border-color: rgba(61, 214, 245, 0.55);
+  box-shadow: var(--sk-shadow);
+}
+.sk-app .sk-card h3 {
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  /* keep cards equal height: clamp long titles to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sk-app .sk-card .font-mono.font-semibold {
+  font-size: 1rem;
+}
+/* Ready for when listings get photos: give the image a fixed ratio
+   so cards never jump while images load. Add class "sk-card__img"
+   to the <img> when you add photo upload. */
+.sk-app .sk-card__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-bg);
+}
+
+/* 7. Listing detail ------------------------------------------ */
+.sk-app .sk-detail {
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--sk-shadow);
+}
+.sk-app .sk-detail h1 {
+  font-size: 1.375rem;
+}
+.sk-app .sk-detail .text-2xl.font-mono {
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+}
+/* Three action buttons (Buy / Chat / WhatsApp) stay on one row;
+   long labels wrap instead of overflowing. */
+.sk-app .sk-detail .grid-cols-3 > * {
+  min-width: 0;
+  padding-inline: 8px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.2;
+}
+.sk-app .sk-detail .grid-cols-2 > * {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+/* 8. Chat & reviews ------------------------------------------ */
+.sk-app .sk-chat,
+.sk-app .sk-reviews {
+  border-radius: var(--sk-radius);
+  background: #0a111d;
+}
+.sk-app .sk-chat input {
+  min-height: 40px;
+  font-size: 16px;
+}
+.sk-app .sk-chat .overflow-y-auto {
+  overscroll-behavior: contain;
+}
+.sk-app .sk-reviews textarea,
+.sk-app .sk-reviews input {
+  font-size: 16px;
+}
+
+/* 9. Forms, sell form & admin login -------------------------- */
+.sk-app input,
+.sk-app select,
+.sk-app textarea {
+  font-size: 16px; /* prevents mobile browsers zooming on focus */
+  border-radius: var(--sk-radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sk-app input:not([type="checkbox"]):not([type="radio"]),
+.sk-app select {
+  min-height: var(--sk-tap);
+}
+.sk-app input:focus,
+.sk-app select:focus,
+.sk-app textarea:focus {
+  border-color: var(--sk-cyan);
+}
+.sk-app select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%237C8BA0' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+/* Hide number-input spinners (price field) */
+.sk-app input[type="number"] {
+  -moz-appearance: textfield;
+}
+.sk-app input[type="number"]::-webkit-outer-spin-button,
+.sk-app input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.sk-app input:-webkit-autofill {
+  -webkit-text-fill-color: var(--sk-text);
+  box-shadow: 0 0 0 1000px var(--sk-bg) inset;
+}
+.sk-app .sk-form-page h1,
+.sk-app .sk-login h1 {
+  font-size: 1.25rem;
+}
+.sk-app .sk-login {
+  padding: 28px 24px;
+  box-shadow: var(--sk-shadow);
+}
+.sk-app .sk-login-page {
+  padding-top: 48px;
+}
+
+/* 10. Admin panel (business dashboard look) ------------------ */
+.sk-app .sk-admin h1 {
+  font-size: 1.375rem;
+}
+/* Summary cards (pending / potential commission) */
+.sk-app .sk-admin > .grid.grid-cols-2 > div {
+  position: relative;
+  border-radius: var(--sk-radius);
+  padding: 18px;
+  box-shadow: var(--sk-shadow);
+  overflow: hidden;
+}
+.sk-app .sk-admin > .grid.grid-cols-2 > div::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--sk-cyan);
+}
+.sk-app .sk-admin > .grid.grid-cols-2 > div:first-child::before {
+  background: var(--sk-amber);
+}
+/* Pending-review cards */
+.sk-app .sk-admin .space-y-3 > div {
+  border-radius: var(--sk-radius);
+}
+/* Approve = positive, Decline = destructive: obvious at a glance */
+.sk-app .sk-admin button[class*="py-2 "] {
+  min-height: var(--sk-tap);
+  border-radius: var(--sk-radius-sm);
+  font-size: 0.8125rem;
+}
+.sk-app .sk-admin .space-y-2 > div {
+  border-radius: var(--sk-radius-sm);
+  gap: 12px;
+}
+/* Generic table styles, ready for future order / product tables */
+.sk-app table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.sk-app th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--sk-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sk-app th,
+.sk-app td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--sk-border);
+}
+.sk-app tbody tr:hover {
+  background: rgba(61, 214, 245, 0.04);
+}
+
+/* 11. Toast, loading & empty states -------------------------- */
+.sk-app .sk-toast {
+  max-width: calc(100vw - 32px);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0));
+  border-radius: var(--sk-radius);
+  box-shadow: var(--sk-shadow);
+  line-height: 1.35;
+}
+.sk-loading {
+  background: var(--sk-bg);
+}
+.sk-app .sk-empty {
+  border-radius: var(--sk-radius);
+  background: rgba(15, 27, 45, 0.5);
+  padding-block: 56px;
+}
+
+/* 12. Responsive ---------------------------------------------- */
+/* Phones */
+@media (max-width: 640px) {
+  .sk-app .sk-detail {
+    padding: 18px;
+    border-radius: var(--sk-radius);
+  }
+  .sk-app .sk-detail h1 {
+    font-size: 1.2rem;
+  }
+  .sk-app .sk-detail .grid-cols-3 {
+    gap: 8px;
+  }
+  .sk-app .sk-detail .grid-cols-3 > * {
+    font-size: 0.8125rem;
+    gap: 6px;
+  }
+  .sk-app .sk-infobar .ml-auto {
+    margin-left: 0;
+    width: 100%;
+  }
+  /* chips: one scrollable row, edge-to-edge */
+  .sk-app .overflow-x-auto {
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .sk-app .sk-login-page {
+    padding-top: 24px;
+  }
+  .sk-app .sk-admin > .grid.grid-cols-2 {
+    gap: 10px;
+  }
+  .sk-app .sk-admin > .grid.grid-cols-2 .text-2xl {
+    font-size: 1.25rem;
+  }
+}
+
+/* Very small phones: stack the Buy / Chat / WhatsApp row */
+@media (max-width: 380px) {
+  .sk-app .sk-detail .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1023px) {
+  .sk-app .sk-grid {
+    gap: 16px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .sk-app .max-w-5xl {
+    max-width: 70rem;
+  }
+  .sk-app .sk-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .sk-app .sk-detail-page,
+  .sk-app .sk-admin {
+    max-width: 46rem;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1440px) {
+  .sk-app .max-w-5xl {
+    max-width: 80rem;
+  }
+}
+
+/* 13. Accessibility & reduced motion -------------------------- */
+.sk-app :focus-visible {
+  outline: 2px solid var(--sk-cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Make faint helper text a little easier to read */
+.sk-app .text-\[\#4D5C73\] {
+  color: #6b7c94;
+}
+.sk-app .text-\[\#7C8BA0\] {
+  color: #8a99ae;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .sk-app *,
+  .sk-app *::before,
+  .sk-app *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+@media (hover: none) {
+  /* no sticky hover lift on touch screens */
+  .sk-app .sk-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
