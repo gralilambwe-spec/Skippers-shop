@@ -210,6 +210,42 @@ body {
   line-height: 1.25;
 }
 
+/* Listing photo on the detail page and the sell-form preview */
+.sk-app .sk-detail__img {
+  display: block;
+  width: 100%;
+  max-height: 380px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-bg);
+  margin-bottom: 18px;
+}
+.sk-app .sk-form__preview {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--sk-radius-sm);
+  margin-top: 10px;
+  border: 1px solid var(--sk-border-strong);
+}
+.sk-app input[type="file"] {
+  min-height: var(--sk-tap);
+  padding: 10px 0;
+}
+.sk-app input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--sk-border-strong);
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-surface-2);
+  color: var(--sk-text);
+  font: inherit;
+  cursor: pointer;
+}
+
 /* 8. Chat & reviews ------------------------------------------ */
 .sk-app .sk-chat,
 .sk-app .sk-reviews {

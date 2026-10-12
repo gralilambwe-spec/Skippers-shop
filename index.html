@@ -231,6 +231,7 @@ react-dom/cjs/react-dom-client.production.js:
       number: "0880 819 892"
     }
   };
+  const PLACEHOLDER_BANK_NUMBER = "1234567890";
   const CATEGORIES = ["All", "Phones", "Spare Parts", "Accessories", "Repair"];
   function rowToListing(r) {
     return {
@@ -243,6 +244,7 @@ react-dom/cjs/react-dom-client.production.js:
       status: r.status,
       condition: r.condition || "",
       desc: r.description || "",
+      imageUrl: r.image_url || "",
       createdAt: new Date(r.created_at).getTime()
     };
   }
@@ -253,18 +255,34 @@ react-dom/cjs/react-dom-client.production.js:
   }
   async function loadShop() {
     try {
-      const raw = localStorage.getItem("skippers_shop_config");
-      if (raw) return { ...DEFAULT_SHOP, ...JSON.parse(raw) };
+      const { data, error } = await supabase.from("shop_settings").select("data").eq("id", 1).maybeSingle();
+      if (error) throw error;
+      if (data && data.data && Object.keys(data.data).length) return { ...DEFAULT_SHOP, ...data.data };
     } catch (e) {
+      console.error("Failed to load shop settings", e);
     }
     return DEFAULT_SHOP;
   }
   async function saveShop(shop) {
-    try {
-      localStorage.setItem("skippers_shop_config", JSON.stringify(shop));
-    } catch (e) {
-      console.error("Failed to save shop config", e);
-    }
+    const { error } = await supabase.from("shop_settings").upsert({ id: 1, data: shop, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  }
+  async function resizeImage(file, maxSide, quality) {
+    const img = await new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = () => { URL.revokeObjectURL(url); resolve(im); };
+      im.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read that image")); };
+      im.src = url;
+    });
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not process that image"))), "image/jpeg", quality);
+    });
   }
   function formatMWK(n) {
     return "MWK " + n.toLocaleString("en-US");
@@ -293,7 +311,8 @@ react-dom/cjs/react-dom-client.production.js:
       default: "bg-[#15233A] text-[#9FB3CC] border-[#22344F]",
       live: "bg-[#0E2A2E] text-[#3DD6F5] border-[#1C4A52]",
       pending: "bg-[#2A2310] text-[#F5A623] border-[#4A3C18]",
-      shop: "bg-[#0E2A2E] text-[#3DD6F5] border-[#1C4A52]"
+      shop: "bg-[#0E2A2E] text-[#3DD6F5] border-[#1C4A52]",
+      sold: "bg-[#2A1414] text-[#F56B5C] border-[#4A1C1C]"
     };
     return /* @__PURE__ */ React.createElement("span", { className: `font-mono text-[10px] uppercase tracking-wider px-2 py-1 rounded border ${tones[tone]}` }, children);
   }
@@ -302,12 +321,14 @@ react-dom/cjs/react-dom-client.production.js:
       "button",
       {
         onClick: () => onOpen(listing),
+        style: listing.status === "sold" ? { opacity: 0.7 } : void 0,
         className: "sk-card group relative text-left rounded-lg bg-[#0F1B2D] border border-[#1C2C42] p-4 flex flex-col gap-3 overflow-hidden transition-all duration-300 hover:border-[#3DD6F5]/60 hover:-translate-y-0.5"
       },
       /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-4 w-px h-3 bg-[#3DD6F5]/0 group-hover:bg-[#3DD6F5]/70 transition-colors duration-300" }),
       /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 right-4 w-px h-3 bg-[#3DD6F5]/0 group-hover:bg-[#3DD6F5]/70 transition-colors duration-300" }),
       isWatching && /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3 w-6 h-6 rounded-full bg-[#3DD6F5]/15 border border-[#3DD6F5]/40 flex items-center justify-center" }, /* @__PURE__ */ React.createElement(Eye, { size: 12, className: "text-[#3DD6F5]" })),
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-md bg-[#0B1220] border border-[#22344F] flex items-center justify-center flex-shrink-0" }, listing.category === "Repair" ? /* @__PURE__ */ React.createElement(Wrench, { size: 18, className: "text-[#3DD6F5]" }) : /* @__PURE__ */ React.createElement(ShoppingBag, { size: 18, className: "text-[#3DD6F5]" })), listing.isShop && /* @__PURE__ */ React.createElement(Pill, { tone: "shop" }, "Shop")),
+      listing.imageUrl && /* @__PURE__ */ React.createElement("img", { src: listing.imageUrl, alt: listing.title, loading: "lazy", width: 400, height: 300, className: "sk-card__img" }),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { style: listing.imageUrl ? { display: "none" } : void 0, className: "w-12 h-12 rounded-md bg-[#0B1220] border border-[#22344F] flex items-center justify-center flex-shrink-0" }, listing.category === "Repair" ? /* @__PURE__ */ React.createElement(Wrench, { size: 18, className: "text-[#3DD6F5]" }) : /* @__PURE__ */ React.createElement(ShoppingBag, { size: 18, className: "text-[#3DD6F5]" })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, listing.isShop && /* @__PURE__ */ React.createElement(Pill, { tone: "shop" }, "Shop"), listing.status === "sold" && /* @__PURE__ */ React.createElement(Pill, { tone: "sold" }, "Sold"))),
       /* @__PURE__ */ React.createElement("div", { className: "flex-1" }, /* @__PURE__ */ React.createElement("h3", { className: "font-sans text-[14px] font-medium text-[#E8EEF5] leading-snug mb-1" }, listing.title), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[11px] text-[#7C8BA0]" }, listing.condition)),
       /* @__PURE__ */ React.createElement("div", { className: "flex items-end justify-between pt-2 border-t border-[#1C2C42]" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[15px] text-[#3DD6F5] font-semibold" }, formatMWK(listing.price)), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-[#7C8BA0]" }, timeAgo(listing.createdAt)))
     );
@@ -547,6 +568,9 @@ react-dom/cjs/react-dom-client.production.js:
     const [chatOpen, setChatOpen] = useState(false);
     const [payTab, setPayTab] = useState("bank");
     const [copied, setCopied] = useState("");
+    const isSold = listing.status === "sold";
+    const bankIsPlaceholder = !shop.bank.accountNumber || shop.bank.accountNumber === PLACEHOLDER_BANK_NUMBER;
+    const payBank = bankIsPlaceholder ? { bankName: "Not set up yet", accountName: "Please message us on WhatsApp for bank details", accountNumber: "\u2014", branch: "\u2014" } : shop.bank;
     const waLinkAsk = `https://wa.me/${shop.whatsappDigits}?text=${encodeURIComponent(
       `Hi, I'm interested in: ${listing.title} (${formatMWK(listing.price)})`
     )}`;
@@ -571,16 +595,18 @@ react-dom/cjs/react-dom-client.production.js:
       /* @__PURE__ */ React.createElement(Eye, { size: 13 }),
       " ",
       isWatching ? "Watching" : "Watch"
-    )), /* @__PURE__ */ React.createElement("div", { className: "sk-detail rounded-xl bg-[#0F1B2D] border border-[#1C2C42] p-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between mb-4" }, /* @__PURE__ */ React.createElement(Pill, { tone: listing.isShop ? "shop" : "default" }, listing.isShop ? "Sold by Skippers" : `Sold by ${listing.seller}`), /* @__PURE__ */ React.createElement(Pill, null, listing.category)), /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-xl font-semibold text-[#E8EEF5] mb-2" }, listing.title), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#3DD6F5] font-bold mb-4" }, formatMWK(listing.price)), /* @__PURE__ */ React.createElement(SellerReviews, { sellerName: listing.isShop ? "Skippers Electronics" : listing.seller }), /* @__PURE__ */ React.createElement("div", { className: "space-y-3 mb-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Condition"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#C5D2E0]" }, listing.condition)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Description"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#C5D2E0]" }, listing.desc))), /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0B1220] border border-[#22344F] p-4 mb-5 flex items-start gap-3" }, /* @__PURE__ */ React.createElement(MapPin, { size: 16, className: "text-[#3DD6F5] flex-shrink-0 mt-0.5" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#E8EEF5]" }, shop.location), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#7C8BA0] mt-0.5" }, listing.isShop ? "Collect in-store" : "Meet at the shop to inspect & pay safely"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2.5 mb-2.5" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "sk-detail rounded-xl bg-[#0F1B2D] border border-[#1C2C42] p-6" }, listing.imageUrl && /* @__PURE__ */ React.createElement("img", { src: listing.imageUrl, alt: listing.title, width: 800, height: 600, className: "sk-detail__img" }), /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between mb-4" }, /* @__PURE__ */ React.createElement(Pill, { tone: listing.isShop ? "shop" : "default" }, listing.isShop ? "Sold by Skippers" : `Sold by ${listing.seller}`), /* @__PURE__ */ React.createElement(Pill, null, listing.category)), /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-xl font-semibold text-[#E8EEF5] mb-2" }, listing.title), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#3DD6F5] font-bold mb-4" }, formatMWK(listing.price)), /* @__PURE__ */ React.createElement(SellerReviews, { sellerName: listing.isShop ? "Skippers Electronics" : listing.seller }), /* @__PURE__ */ React.createElement("div", { className: "space-y-3 mb-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Condition"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#C5D2E0]" }, listing.condition)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Description"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#C5D2E0]" }, listing.desc))), /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0B1220] border border-[#22344F] p-4 mb-5 flex items-start gap-3" }, /* @__PURE__ */ React.createElement(MapPin, { size: 16, className: "text-[#3DD6F5] flex-shrink-0 mt-0.5" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#E8EEF5]" }, shop.location), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#7C8BA0] mt-0.5" }, listing.isShop ? "Collect in-store" : "Meet at the shop to inspect & pay safely"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2.5 mb-2.5" }, /* @__PURE__ */ React.createElement(
       "a",
       {
-        href: waLinkBuy,
+        href: isSold ? void 0 : waLinkBuy,
+        style: isSold ? { opacity: 0.4, pointerEvents: "none" } : void 0,
+        "aria-disabled": isSold,
         target: "_blank",
         rel: "noopener noreferrer",
         className: "flex items-center justify-center gap-2 rounded-lg bg-[#F5A623] text-[#0B1220] font-medium text-sm py-3 hover:bg-[#FFB84D] transition-colors"
       },
       /* @__PURE__ */ React.createElement(Zap, { size: 15 }),
-      " Buy now"
+      isSold ? " Sold" : " Buy now"
     ), /* @__PURE__ */ React.createElement(ListingChatButton, { open: chatOpen, onToggle: () => setChatOpen((o) => !o) }), /* @__PURE__ */ React.createElement(
       "a",
       {
@@ -621,9 +647,28 @@ react-dom/cjs/react-dom-client.production.js:
         className: `font-mono text-[10px] uppercase tracking-wider px-2.5 py-1.5 rounded-md border whitespace-nowrap transition-colors ${payTab === t.key ? "bg-[#3DD6F5] text-[#0B1220] border-[#3DD6F5]" : "bg-transparent text-[#7C8BA0] border-[#1C2C42] hover:border-[#3DD6F5]/40"}`
       },
       t.label
-    ))), payTab === "bank" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 text-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Bank"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, shop.bank.bankName)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Account name"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5] text-right" }, shop.bank.accountName)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Account number"), /* @__PURE__ */ React.createElement("button", { onClick: () => copyValue("bank", shop.bank.accountNumber), className: "flex items-center gap-1.5 font-mono text-[#3DD6F5] hover:text-[#5FE0F8]" }, shop.bank.accountNumber, " ", /* @__PURE__ */ React.createElement(Copy, { size: 12 }))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Branch"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, shop.bank.branch))), payTab === "airtel" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 text-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Registered name"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, shop.airtelMoney.name)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Airtel Money number"), /* @__PURE__ */ React.createElement("button", { onClick: () => copyValue("airtel", shop.airtelMoney.number), className: "flex items-center gap-1.5 font-mono text-[#3DD6F5] hover:text-[#5FE0F8]" }, shop.airtelMoney.number, " ", /* @__PURE__ */ React.createElement(Copy, { size: 12 })))), payTab === "tnm" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 text-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Registered name"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, shop.tnmMpamba.name)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "TNM Mpamba number"), /* @__PURE__ */ React.createElement("button", { onClick: () => copyValue("tnm", shop.tnmMpamba.number), className: "flex items-center gap-1.5 font-mono text-[#3DD6F5] hover:text-[#5FE0F8]" }, shop.tnmMpamba.number, " ", /* @__PURE__ */ React.createElement(Copy, { size: 12 })))), copied && /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#3DD6F5] mt-3" }, "Copied."), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#7C8BA0] mt-3" }, "Please send your proof of payment on WhatsApp after paying, so we can confirm and prepare your order."))));
+    ))), payTab === "bank" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 text-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Bank"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, payBank.bankName)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Account name"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5] text-right" }, payBank.accountName)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Account number"), /* @__PURE__ */ React.createElement("button", { onClick: () => !bankIsPlaceholder && copyValue("bank", payBank.accountNumber), className: "flex items-center gap-1.5 font-mono text-[#3DD6F5] hover:text-[#5FE0F8]" }, payBank.accountNumber, " ", /* @__PURE__ */ React.createElement(Copy, { size: 12 }))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Branch"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, payBank.branch))), payTab === "airtel" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 text-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Registered name"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, shop.airtelMoney.name)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Airtel Money number"), /* @__PURE__ */ React.createElement("button", { onClick: () => copyValue("airtel", shop.airtelMoney.number), className: "flex items-center gap-1.5 font-mono text-[#3DD6F5] hover:text-[#5FE0F8]" }, shop.airtelMoney.number, " ", /* @__PURE__ */ React.createElement(Copy, { size: 12 })))), payTab === "tnm" && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 text-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "Registered name"), /* @__PURE__ */ React.createElement("span", { className: "text-[#E8EEF5]" }, shop.tnmMpamba.name)), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "TNM Mpamba number"), /* @__PURE__ */ React.createElement("button", { onClick: () => copyValue("tnm", shop.tnmMpamba.number), className: "flex items-center gap-1.5 font-mono text-[#3DD6F5] hover:text-[#5FE0F8]" }, shop.tnmMpamba.number, " ", /* @__PURE__ */ React.createElement(Copy, { size: 12 })))), copied && /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#3DD6F5] mt-3" }, "Copied."), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#7C8BA0] mt-3" }, "Please send your proof of payment on WhatsApp after paying, so we can confirm and prepare your order."))));
+  }
+  function PhotoPicker({ photo, setPhoto }) {
+    const [preview, setPreview] = useState("");
+    useEffect(() => {
+      if (!photo) { setPreview(""); return; }
+      const url = URL.createObjectURL(photo);
+      setPreview(url);
+      return () => URL.revokeObjectURL(url);
+    }, [photo]);
+    return /* @__PURE__ */ React.createElement(Field, { label: "Photo (optional)" },
+      /* @__PURE__ */ React.createElement("input", {
+        type: "file",
+        accept: "image/*",
+        onChange: (e) => setPhoto(e.target.files && e.target.files[0] ? e.target.files[0] : null),
+        className: "w-full text-xs text-[#9FB3CC]"
+      }),
+      preview && /* @__PURE__ */ React.createElement("img", { src: preview, alt: "Preview", className: "sk-form__preview" })
+    );
   }
   function SubmitListingForm({ onSubmit, onCancel, isAdmin, shopName }) {
+    const [photo, setPhoto] = useState(null);
     const [form, setForm] = useState({
       title: "",
       category: "Phones",
@@ -684,11 +729,11 @@ react-dom/cjs/react-dom-client.production.js:
         placeholder: "Condition details, accessories included, reason for selling...",
         className: "w-full bg-[#0B1220] border border-[#22344F] rounded-md px-3 py-2.5 text-sm text-[#E8EEF5] placeholder:text-[#4D5C73] focus:outline-none focus:ring-1 focus:ring-[#3DD6F5] resize-none"
       }
-    )), !isAdmin && form.price && /* @__PURE__ */ React.createElement("div", { className: "rounded-md bg-[#0B1220] border border-[#22344F] px-3 py-2.5 flex items-center justify-between text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "You'd receive (after commission)"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[#3DD6F5]" }, formatMWK(Math.round(Number(form.price) * (1 - COMMISSION_RATE))))), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(PhotoPicker, { photo, setPhoto }), !isAdmin && form.price && /* @__PURE__ */ React.createElement("div", { className: "rounded-md bg-[#0B1220] border border-[#22344F] px-3 py-2.5 flex items-center justify-between text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#7C8BA0]" }, "You'd receive (after commission)"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[#3DD6F5]" }, formatMWK(Math.round(Number(form.price) * (1 - COMMISSION_RATE))))), /* @__PURE__ */ React.createElement(
       "button",
       {
         disabled: !valid,
-        onClick: () => onSubmit(form, isAdmin),
+        onClick: () => onSubmit(form, isAdmin, photo),
         className: `w-full rounded-lg font-medium text-sm py-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors mt-2 ${isAdmin ? "bg-[#F5A623] text-[#0B1220] hover:bg-[#FFB84D]" : "bg-[#3DD6F5] text-[#0B1220] hover:bg-[#5FE0F8]"}`
       },
       isAdmin ? "Post now (live immediately)" : "Submit for review"
@@ -715,10 +760,12 @@ react-dom/cjs/react-dom-client.production.js:
         return next;
       });
     };
-    const handleSave = () => {
-      onUpdateShop(draft);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1800);
+    const handleSave = async () => {
+      const ok = await onUpdateShop(draft);
+      if (ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1800);
+      }
     };
     return /* @__PURE__ */ React.createElement("div", { className: "space-y-5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-2" }, "Contact"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ React.createElement(
       "input",
@@ -854,10 +901,11 @@ react-dom/cjs/react-dom-client.production.js:
       )
     );
   }
-  function AdminPanel({ listings, onApprove, onReject, onClose, shop, onUpdateShop, onLogout, onPostAsShop }) {
+  function AdminPanel({ listings, onApprove, onReject, onClose, shop, onUpdateShop, onLogout, onPostAsShop, onToggleSold, onDelete }) {
     const [showSettings, setShowSettings] = useState(false);
     const pending = listings.filter((l) => l.status === "pending");
     const approved = listings.filter((l) => l.status === "approved" && !l.isShop);
+    const manage = listings.filter((l) => l.status !== "pending");
     const totalCommissionPotential = approved.reduce((sum, l) => sum + l.price * COMMISSION_RATE, 0);
     return /* @__PURE__ */ React.createElement("div", { className: "sk-admin max-w-2xl mx-auto px-4 py-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement(ShieldCheck, { size: 16, className: "text-[#F5A623]" }), /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-lg font-semibold text-[#E8EEF5]" }, "Admin review")), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#7C8BA0]" }, "Approve seller listings and track commission")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: onLogout, className: "text-[#F56B5C] hover:text-[#E8EEF5] text-sm" }, "Log out"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "text-[#7C8BA0] hover:text-[#E8EEF5] text-sm" }, "Done"))), /* @__PURE__ */ React.createElement("button", { onClick: onPostAsShop, className: "w-full flex items-center justify-center gap-2 rounded-lg bg-[#F5A623] text-[#0B1220] font-medium text-sm py-3 mb-3 hover:bg-[#FFB84D] transition-colors" }, /* @__PURE__ */ React.createElement(Plus, { size: 15 }), " Post as Skippers (goes live instantly)"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-3 mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0F1B2D] border border-[#1C2C42] p-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Pending review"), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#F5A623] font-semibold" }, pending.length)), /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0F1B2D] border border-[#1C2C42] p-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Potential commission"), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#3DD6F5] font-semibold" }, formatMWK(Math.round(totalCommissionPotential))))), /* @__PURE__ */ React.createElement(
       "button",
@@ -883,7 +931,14 @@ react-dom/cjs/react-dom-client.production.js:
       },
       /* @__PURE__ */ React.createElement(X, { size: 14 }),
       " Decline"
-    ))))), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-3" }, "Live seller listings"), approved.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#4D5C73]" }, "None yet.") : /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, approved.map((l) => /* @__PURE__ */ React.createElement("div", { key: l.id, className: "flex items-center justify-between rounded-md bg-[#0B1220] border border-[#1C2C42] px-3 py-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm text-[#C5D2E0]" }, l.title), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs text-[#7C8BA0]" }, "+", formatMWK(Math.round(l.price * COMMISSION_RATE)), " on sale")))));
+    ))))), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-3" }, "All listings"), manage.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#4D5C73]" }, "None yet.") : /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, manage.map((l) => /* @__PURE__ */ React.createElement("div", { key: l.id, className: "rounded-md bg-[#0B1220] border border-[#1C2C42] px-3 py-2.5" },
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm text-[#C5D2E0]" }, l.title), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs text-[#7C8BA0]" }, formatMWK(l.price))),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 mt-2" },
+        /* @__PURE__ */ React.createElement(Pill, { tone: l.status === "approved" ? "live" : l.status === "sold" ? "sold" : "default" }, l.status + (l.isShop ? " \u00b7 shop" : "")),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+          /* @__PURE__ */ React.createElement("button", { onClick: () => onToggleSold(l), className: "font-mono text-[10px] uppercase tracking-wider px-2.5 py-1.5 rounded border bg-[#0E2A2E] border-[#1C4A52] text-[#3DD6F5] hover:bg-[#123339] transition-colors" }, l.status === "approved" ? "Mark sold" : l.status === "sold" ? "Reopen" : "Approve"),
+          /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(l), className: "font-mono text-[10px] uppercase tracking-wider px-2.5 py-1.5 rounded border bg-[#2A1414] border-[#4A1C1C] text-[#F56B5C] hover:bg-[#341818] transition-colors" }, "Delete")))
+    ))));
   }
   function App() {
     const [listings, setListings] = useState([]);
@@ -958,13 +1013,13 @@ react-dom/cjs/react-dom-client.production.js:
       const t = setTimeout(() => setToast(null), 2600);
       return () => clearTimeout(t);
     }, [toast]);
-    const visible = listings.filter((l) => l.status === "approved");
+    const visible = listings.filter((l) => l.status === "approved" || l.status === "sold");
     const filtered = visible.filter((l) => {
       const matchCat = category === "All" || l.category === category;
       const matchQuery = l.title.toLowerCase().includes(query.toLowerCase());
       return matchCat && matchQuery;
     });
-    const handleSubmit = useCallback(async (form, postAsShop) => {
+    const handleSubmit = useCallback(async (form, postAsShop, photo) => {
       const asShop = !!postAsShop && isAdmin;
       const newListing = {
         id: "lst_" + Date.now(),
@@ -978,6 +1033,20 @@ react-dom/cjs/react-dom-client.production.js:
         desc: form.desc || "No additional details provided.",
         createdAt: Date.now()
       };
+      let imageUrl = null;
+      if (photo) {
+        try {
+          const blob = await resizeImage(photo, 1000, 0.8);
+          const path = newListing.id + ".jpg";
+          const up = await supabase.storage.from("listing-photos").upload(path, blob, { contentType: "image/jpeg" });
+          if (up.error) throw up.error;
+          imageUrl = supabase.storage.from("listing-photos").getPublicUrl(path).data.publicUrl;
+        } catch (e) {
+          console.error(e);
+          setToast("Photo upload failed. Try a different photo or post without one.");
+          return;
+        }
+      }
       const { error } = await supabase.from("listings").insert({
         id: newListing.id,
         title: newListing.title,
@@ -987,7 +1056,8 @@ react-dom/cjs/react-dom-client.production.js:
         is_shop: newListing.isShop,
         status: newListing.status,
         condition: newListing.condition,
-        description: newListing.desc
+        description: newListing.desc,
+        image_url: imageUrl
       });
       if (error) {
         console.error(error);
@@ -999,8 +1069,8 @@ react-dom/cjs/react-dom-client.production.js:
       setToast(asShop ? "Posted \u2014 your listing is live now." : "Listing submitted \u2014 Skippers will review it shortly.");
     }, [isAdmin, refreshListings]);
     const setListingStatus = async (id, status, okMsg) => {
-      const { error } = await supabase.from("listings").update({ status }).eq("id", id);
-      if (error) {
+      const { data, error } = await supabase.from("listings").update({ status }).eq("id", id).select();
+      if (error || !data || data.length === 0) {
         console.error(error);
         setToast("Could not update the listing. Are you still signed in?");
         return;
@@ -1008,12 +1078,36 @@ react-dom/cjs/react-dom-client.production.js:
       await refreshListings();
       setToast(okMsg);
     };
+    const handleToggleSold = (l) => {
+      if (l.status === "sold") return setListingStatus(l.id, "approved", "Listing is available again.");
+      if (l.status === "approved") return setListingStatus(l.id, "sold", "Marked as sold.");
+      return setListingStatus(l.id, "approved", "Listing approved and now live.");
+    };
+    const handleDelete = async (l) => {
+      if (!window.confirm('Delete "' + l.title + '" permanently? This cannot be undone.')) return;
+      const { data, error } = await supabase.from("listings").delete().eq("id", l.id).select();
+      if (error || !data || data.length === 0) {
+        console.error(error);
+        setToast("Could not delete. Are you still signed in?");
+        return;
+      }
+      if (l.imageUrl) await supabase.storage.from("listing-photos").remove([l.id + ".jpg"]);
+      await refreshListings();
+      setToast("Listing deleted.");
+    };
     const handleApprove = (id) => setListingStatus(id, "approved", "Listing approved and now live.");
     const handleReject = (id) => setListingStatus(id, "rejected", "Listing declined.");
-    const handleUpdateShop = useCallback((updatedShop) => {
+    const handleUpdateShop = useCallback(async (updatedShop) => {
+      try {
+        await saveShop(updatedShop);
+      } catch (e) {
+        console.error(e);
+        setToast("Could not save. Are you still signed in as admin?");
+        return false;
+      }
       setShop(updatedShop);
-      saveShop(updatedShop);
-      setToast("Shop details updated.");
+      setToast("Shop details updated for everyone.");
+      return true;
     }, []);
     const pendingCount = listings.filter((l) => l.status === "pending").length;
     if (!ready) {
@@ -1081,6 +1175,8 @@ react-dom/cjs/react-dom-client.production.js:
         shop,
         onUpdateShop: handleUpdateShop,
         onLogout: handleLogout,
+        onToggleSold: handleToggleSold,
+        onDelete: handleDelete,
         onPostAsShop: () => setView("submit")
       }
     )), toast && /* @__PURE__ */ React.createElement("div", { className: "sk-toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#15233A] border border-[#3DD6F5]/40 text-[#E8EEF5] text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 z-20" }, /* @__PURE__ */ React.createElement(Check, { size: 14, className: "text-[#3DD6F5]" }), " ", toast));
