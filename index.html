@@ -264,8 +264,14 @@ react-dom/cjs/react-dom-client.production.js:
     return DEFAULT_SHOP;
   }
   async function saveShop(shop) {
-    const { error } = await supabase.from("shop_settings").upsert({ id: 1, data: shop, updated_at: new Date().toISOString() });
-    if (error) throw error;
+    const row = { data: shop, updated_at: new Date().toISOString() };
+    let res = await supabase.from("shop_settings").update(row).eq("id", 1).select();
+    if (res.error) throw res.error;
+    if (!res.data || res.data.length === 0) {
+      res = await supabase.from("shop_settings").insert({ id: 1, ...row }).select();
+      if (res.error) throw res.error;
+      if (!res.data || res.data.length === 0) throw new Error("The database accepted the request but saved nothing");
+    }
   }
   async function resizeImage(file, maxSide, quality) {
     const img = await new Promise((resolve, reject) => {
@@ -1102,7 +1108,7 @@ react-dom/cjs/react-dom-client.production.js:
         await saveShop(updatedShop);
       } catch (e) {
         console.error(e);
-        setToast("Could not save. Are you still signed in as admin?");
+        setToast("Could not save: " + ((e && e.message) || "unknown error"));
         return false;
       }
       setShop(updatedShop);
