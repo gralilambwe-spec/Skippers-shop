@@ -598,7 +598,7 @@ react-dom/cjs/react-dom-client.production.js:
       setCopied(label);
       setTimeout(() => setCopied(""), 1800);
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "sk-detail-page max-w-2xl mx-auto px-4 py-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-6" }, /* @__PURE__ */ React.createElement("button", { onClick: onBack, className: "flex items-center gap-1.5 text-[#7C8BA0] hover:text-[#3DD6F5] text-sm transition-colors" }, /* @__PURE__ */ React.createElement(ArrowLeft, { size: 16 }), " Back to listings"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "sk-detail-page max-w-2xl mx-auto px-4 py-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-6" }, /* @__PURE__ */ React.createElement("span", null), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => onToggleWatch(listing.id),
@@ -691,7 +691,7 @@ react-dom/cjs/react-dom-client.production.js:
     });
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
     const valid = form.title.trim() && form.price && form.seller.trim();
-    return /* @__PURE__ */ React.createElement("div", { className: "sk-form-page max-w-lg mx-auto px-4 py-6" }, /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "flex items-center gap-1.5 text-[#7C8BA0] hover:text-[#3DD6F5] text-sm mb-6 transition-colors" }, /* @__PURE__ */ React.createElement(ArrowLeft, { size: 16 }), " Cancel"), /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-lg font-semibold text-[#E8EEF5] mb-1" }, "List something for sale"), isAdmin ? /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#F5A623] mb-6 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(ShieldCheck, { size: 14 }), " Posting as Skippers \u2014 this goes live instantly, no review needed.") : /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#7C8BA0] mb-6" }, "Skippers reviews every listing before it goes live. A ", Math.round(COMMISSION_RATE * 100), "% commission applies on sale."), /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement(Field, { label: "Your name" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "sk-form-page max-w-lg mx-auto px-4 py-6" }, /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-lg font-semibold text-[#E8EEF5] mb-1" }, "List something for sale"), isAdmin ? /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#F5A623] mb-6 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(ShieldCheck, { size: 14 }), " Posting as Skippers \u2014 this goes live instantly, no review needed.") : /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#7C8BA0] mb-6" }, "Skippers reviews every listing before it goes live. A ", Math.round(COMMISSION_RATE * 100), "% commission applies on sale."), /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement(Field, { label: "Your name" }, /* @__PURE__ */ React.createElement(
       "input",
       {
         value: form.seller,
@@ -913,7 +913,6 @@ react-dom/cjs/react-dom-client.production.js:
     };
     const inputCls = "w-full bg-[#0B1220] border border-[#22344F] rounded-md px-3 py-2.5 text-sm text-[#E8EEF5] placeholder:text-[#4D5C73] focus:outline-none focus:ring-1 focus:ring-[#3DD6F5]";
     return /* @__PURE__ */ React.createElement("div", { className: "sk-login-page max-w-lg mx-auto px-4 py-6" },
-      /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "flex items-center gap-1.5 text-[#7C8BA0] hover:text-[#3DD6F5] text-sm mb-6 transition-colors" }, /* @__PURE__ */ React.createElement(ArrowLeft, { size: 16 }), " Back"),
       /* @__PURE__ */ React.createElement("div", { className: "sk-login rounded-xl bg-[#0F1B2D] border border-[#1C2C42] p-6" },
         /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(ShieldCheck, { size: 18, className: "text-[#F5A623]" }), /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-lg font-semibold text-[#E8EEF5]" }, "Admin sign in")),
         /* @__PURE__ */ React.createElement("div", { className: "space-y-3" },
@@ -982,6 +981,63 @@ react-dom/cjs/react-dom-client.production.js:
   const mapsEmbed = (loc) => "https://www.google.com/maps?q=" + encodeURIComponent(loc) + "&output=embed";
   const telHref = (n) => "tel:" + String(n).replace(/\s/g, "");
   const SITE_NAME = "Skippers Electronics & General Suppliers";
+
+  // ---------- Back button: in-app history tracking ----------
+  // The site is a hash-routed single page, so every page lives at
+  // <project path>/index.html#/route. We number each history entry made by the
+  // site itself (in history.state). A number above 0 means the previous entry is
+  // another page of this site, so history.back() is safe. Number 0 means the
+  // visitor arrived directly, from an external site or from a bookmark, so
+  // Back goes to the home page instead. document.referrer is never used.
+  const SK_NAV = (() => {
+    let idx = 0;
+    let replacing = false;
+    const read = () => {
+      const st = window.history.state;
+      return st && typeof st.skIdx === "number" ? st.skIdx : null;
+    };
+    const stamp = (n) => {
+      try { window.history.replaceState({ ...(window.history.state || {}), skIdx: n }, "", window.location.href); } catch (e) {}
+    };
+    const first = read();
+    idx = first === null ? 0 : first;
+    if (first === null) stamp(0);
+    window.addEventListener("hashchange", () => {
+      const st = read();
+      if (st !== null) { idx = st; return; }          // browser Back/Forward onto a known entry
+      if (replacing) replacing = false; else idx += 1;  // a new entry made by a link click
+      stamp(idx);
+    });
+    // swap the current history entry for another route (no extra entry, no loop)
+    const replaceTo = (route) => {
+      replacing = true;
+      // keep the project path (/skippers-shop/) and only change the hash
+      window.location.replace(window.location.pathname + window.location.search + "#" + route);
+    };
+    const goHome = () => replaceTo("/");
+    return {
+      canGoBack: () => idx > 0,
+      goHome,
+      replaceTo,
+      goBack: () => {
+        if (idx <= 0) return goHome();
+        const before = window.location.href;
+        window.history.back();
+        // if the browser could not go back, do not leave the visitor stuck
+        setTimeout(() => { if (window.location.href === before) goHome(); }, 400);
+      }
+    };
+  })();
+  function BackButton({ size }) {
+    const can = SK_NAV.canGoBack();
+    return h("div", { className: "sk-back-wrap" + (size ? " sk-back-wrap--" + size : "") },
+      h("button", {
+        type: "button",
+        className: "sk-back",
+        onClick: SK_NAV.goBack,
+        "aria-label": can ? "Go back to the previous page" : "Go back to the home page"
+      }, h(ArrowLeft, { size: 16, "aria-hidden": "true" }), h("span", null, "Back")));
+  }
 
   // ---------- Header, menu, footer ----------
   function SiteHeader({ route, query, setQuery, navigate, isAdmin, pendingCount, menuOpen, setMenuOpen, onLogout }) {
@@ -1511,7 +1567,7 @@ react-dom/cjs/react-dom-client.production.js:
       onDelete: handleDelete,
       onPostAsShop: () => navigate("/sell")
     });
-    const loginScreen = h(AdminLogin, { onSuccess: () => { setIsAdmin(true); navigate("/admin"); }, onCancel: () => navigate("/") });
+    const loginScreen = h(AdminLogin, { onSuccess: () => { setIsAdmin(true); SK_NAV.replaceTo("/admin"); }, onCancel: () => navigate("/") });
     let page;
     switch (route.name) {
       case "home":
@@ -1557,7 +1613,9 @@ react-dom/cjs/react-dom-client.production.js:
       h("div", { className: "sk-bg-logo", "aria-hidden": "true" }),
       h("button", { className: "sk-skip", onClick: () => { const m = document.getElementById("main"); if (m) m.focus(); } }, "Skip to content"),
       h(SiteHeader, { route, query, setQuery, navigate, isAdmin, pendingCount, menuOpen, setMenuOpen, onLogout: handleLogout }),
-      h("main", { id: "main", className: "sk-main", tabIndex: -1 }, page),
+      h("main", { id: "main", className: "sk-main", tabIndex: -1 },
+        route.name !== "home" && h(BackButton, { size: route.name === "product" || (route.name === "admin" && isAdmin) ? "md" : (route.name === "sell" || route.name === "admin" || route.name === "admin-login") ? "sm" : "" }),
+        page),
       h(SiteFooter, { shop }),
       toast && h("div", { className: "sk-toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#15233A] border border-[#3DD6F5]/40 text-[#E8EEF5] text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 z-20", role: "status" }, h(Check, { size: 14, className: "text-[#3DD6F5]" }), " ", toast)
     );

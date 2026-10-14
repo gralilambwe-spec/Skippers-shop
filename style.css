@@ -1162,3 +1162,43 @@ body {
     opacity: 0.06;
   }
 }
+
+/* ---------- Back button (shared, shown on every page except home) ---------- */
+.sk-back-wrap {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 14px 16px 0;
+}
+.sk-back-wrap--md {
+  max-width: 42rem;
+}
+.sk-back-wrap--sm {
+  max-width: 32rem;
+}
+.sk-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--sk-tap);
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--sk-border-strong);
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-surface-2);
+  color: var(--sk-text-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.sk-back:hover {
+  color: var(--sk-cyan);
+  border-color: var(--sk-cyan);
+}
+.sk-back:focus-visible {
+  outline: 2px solid var(--sk-cyan);
+  outline-offset: 2px;
+}
+.sk-back:active {
+  background: var(--sk-surface);
+}

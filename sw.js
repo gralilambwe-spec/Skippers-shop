@@ -2,7 +2,7 @@
 // Strategy: network first for the site's own files, so visitors always get the
 // latest version when they are online. The saved copy is used only when offline.
 // To force every visitor to refresh in future, change the number in CACHE_NAME.
-const CACHE_NAME = "skippers-v2";
+const CACHE_NAME = "skippers-v3";
 const ASSETS = ["./", "./index.html", "./style.css", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
