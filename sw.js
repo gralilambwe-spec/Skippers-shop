@@ -1,5 +1,9 @@
-const CACHE_NAME = "skippers-v1";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+// Skippers service worker.
+// Strategy: network first for the site's own files, so visitors always get the
+// latest version when they are online. The saved copy is used only when offline.
+// To force every visitor to refresh in future, change the number in CACHE_NAME.
+const CACHE_NAME = "skippers-v2";
+const ASSETS = ["./", "./index.html", "./style.css", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -18,7 +22,21 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  // Leave everything that is not a plain GET alone.
+  if (req.method !== "GET") return;
+  // Leave other websites (Supabase, fonts, CDN scripts, WhatsApp) to the browser.
+  if (new URL(req.url).origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(req)
+      .then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+        }
+        return res;
+      })
+      .catch(() => caches.match(req).then((cached) => cached || caches.match("./index.html")))
   );
 });
