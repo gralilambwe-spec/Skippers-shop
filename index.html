@@ -374,103 +374,6 @@ react-dom/cjs/react-dom-client.production.js:
       open ? "Hide chat" : "Chat"
     );
   }
-  function ListingChatPanel({ listing }) {
-    const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [name, setName] = useState("");
-    const [text, setText] = useState("");
-    const bottomRef = useRef(null);
-
-    useEffect(() => {
-      let channel;
-      (async () => {
-        setLoading(true);
-        const { data } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("listing_id", listing.id)
-          .order("created_at", { ascending: true });
-        setMessages(data || []);
-        setLoading(false);
-      })();
-      channel = supabase
-        .channel("chat-" + listing.id)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "messages", filter: `listing_id=eq.${listing.id}` },
-          (payload) => setMessages((prev) => [...prev, payload.new])
-        )
-        .subscribe();
-      return () => {
-        if (channel) supabase.removeChannel(channel);
-      };
-    }, [listing.id]);
-
-    useEffect(() => {
-      if (bottomRef.current && bottomRef.current.scrollIntoView) bottomRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }, [messages]);
-
-    const send = async () => {
-      if (!text.trim() || !name.trim()) return;
-      const body = text.trim();
-      setText("");
-      await supabase.from("messages").insert({
-        listing_id: listing.id,
-        listing_title: listing.title,
-        sender_name: name.trim(),
-        body
-      });
-    };
-
-    return /* @__PURE__ */ React.createElement(
-        "div",
-        { className: "sk-chat rounded-lg bg-[#0B1220] border border-[#22344F] p-4 mb-2.5" },
-        /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-3" }, "Chat about this listing"),
-        /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "max-h-52 overflow-y-auto space-y-2 mb-3 pr-1" },
-          loading
-            ? /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#4D5C73]" }, "Loading\u2026")
-            : messages.length === 0
-            ? /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[#4D5C73]" }, "No messages yet \u2014 say hello.")
-            : messages.map((m) => /* @__PURE__ */ React.createElement(
-                "div",
-                { key: m.id, className: "text-xs" },
-                /* @__PURE__ */ React.createElement("span", { className: "text-[#3DD6F5] font-medium" }, m.sender_name, ": "),
-                /* @__PURE__ */ React.createElement("span", { className: "text-[#C5D2E0]" }, m.body)
-              )),
-          /* @__PURE__ */ React.createElement("div", { ref: bottomRef })
-        ),
-        !name && /* @__PURE__ */ React.createElement("input", {
-          value: name,
-          onChange: (e) => setName(e.target.value),
-          placeholder: "Your name (shown in the chat)",
-          className: "w-full bg-[#0F1B2D] border border-[#22344F] rounded-md px-3 py-2 text-xs text-[#E8EEF5] placeholder:text-[#4D5C73] mb-2 focus:outline-none focus:ring-1 focus:ring-[#3DD6F5]"
-        }),
-        /* @__PURE__ */ React.createElement(
-          "div",
-          { className: "flex gap-2" },
-          /* @__PURE__ */ React.createElement("input", {
-            value: text,
-            onChange: (e) => setText(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === "Enter") send();
-            },
-            placeholder: "Type a message\u2026",
-            className: "flex-1 bg-[#0F1B2D] border border-[#22344F] rounded-md px-3 py-2 text-xs text-[#E8EEF5] placeholder:text-[#4D5C73] focus:outline-none focus:ring-1 focus:ring-[#3DD6F5]"
-          }),
-          /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              onClick: send,
-              disabled: !text.trim() || !name.trim(),
-              className: "flex items-center justify-center rounded-md bg-[#3DD6F5] text-[#0B1220] px-3 disabled:opacity-30 disabled:cursor-not-allowed"
-            },
-            /* @__PURE__ */ React.createElement(Send, { size: 14 })
-          )
-        )
-    );
-  }
   function StarRow({ rating, size = 12 }) {
     return /* @__PURE__ */ React.createElement(
       "div",
@@ -575,7 +478,7 @@ react-dom/cjs/react-dom-client.production.js:
             )))
     );
   }
-  function ListingDetail({ listing, onBack, isWatching, onToggleWatch, shop }) {
+  function ListingDetail({ listing, onBack, isWatching, onToggleWatch, shop, user, isAdmin, authChecked }) {
     const [showPay, setShowPay] = useState(false);
     const [chatOpen, setChatOpen] = useState(false);
     const [payTab, setPayTab] = useState("bank");
@@ -629,7 +532,7 @@ react-dom/cjs/react-dom-client.production.js:
       },
       /* @__PURE__ */ React.createElement(Phone, { size: 15 }),
       " WhatsApp"
-    )), chatOpen && /* @__PURE__ */ React.createElement(ListingChatPanel, { listing }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2.5 mb-5" }, /* @__PURE__ */ React.createElement(
+    )), chatOpen && /* @__PURE__ */ React.createElement(ListingChat, { listing, user, isAdmin, authChecked }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2.5 mb-5" }, /* @__PURE__ */ React.createElement(
       "a",
       {
         href: waLinkDelivery,
@@ -930,7 +833,7 @@ react-dom/cjs/react-dom-client.production.js:
     const approved = listings.filter((l) => l.status === "approved" && !l.isShop);
     const manage = listings.filter((l) => l.status !== "pending");
     const totalCommissionPotential = approved.reduce((sum, l) => sum + l.price * COMMISSION_RATE, 0);
-    return /* @__PURE__ */ React.createElement("div", { className: "sk-admin max-w-2xl mx-auto px-4 py-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement(ShieldCheck, { size: 16, className: "text-[#F5A623]" }), /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-lg font-semibold text-[#E8EEF5]" }, "Admin review")), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#7C8BA0]" }, "Approve seller listings and track commission")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: onLogout, className: "text-[#F56B5C] hover:text-[#E8EEF5] text-sm" }, "Log out"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "text-[#7C8BA0] hover:text-[#E8EEF5] text-sm" }, "Done"))), /* @__PURE__ */ React.createElement("button", { onClick: onPostAsShop, className: "w-full flex items-center justify-center gap-2 rounded-lg bg-[#F5A623] text-[#0B1220] font-medium text-sm py-3 mb-3 hover:bg-[#FFB84D] transition-colors" }, /* @__PURE__ */ React.createElement(Plus, { size: 15 }), " Post as Skippers (goes live instantly)"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-3 mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0F1B2D] border border-[#1C2C42] p-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Pending review"), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#F5A623] font-semibold" }, pending.length)), /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0F1B2D] border border-[#1C2C42] p-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Potential commission"), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#3DD6F5] font-semibold" }, formatMWK(Math.round(totalCommissionPotential))))), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "sk-admin max-w-2xl mx-auto px-4 py-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement(ShieldCheck, { size: 16, className: "text-[#F5A623]" }), /* @__PURE__ */ React.createElement("h1", { className: "font-sans text-lg font-semibold text-[#E8EEF5]" }, "Admin review")), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-[#7C8BA0]" }, "Approve seller listings and track commission")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: onLogout, className: "text-[#F56B5C] hover:text-[#E8EEF5] text-sm" }, "Log out"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "text-[#7C8BA0] hover:text-[#E8EEF5] text-sm" }, "Done"))), /* @__PURE__ */ React.createElement("a", { href: "#/messages", className: "sk-btn sk-btn--ghost", style: { width: "100%", marginBottom: "12px" } }, "Customer messages"), /* @__PURE__ */ React.createElement("button", { onClick: onPostAsShop, className: "w-full flex items-center justify-center gap-2 rounded-lg bg-[#F5A623] text-[#0B1220] font-medium text-sm py-3 mb-3 hover:bg-[#FFB84D] transition-colors" }, /* @__PURE__ */ React.createElement(Plus, { size: 15 }), " Post as Skippers (goes live instantly)"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-3 mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0F1B2D] border border-[#1C2C42] p-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Pending review"), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#F5A623] font-semibold" }, pending.length)), /* @__PURE__ */ React.createElement("div", { className: "rounded-lg bg-[#0F1B2D] border border-[#1C2C42] p-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[10px] uppercase tracking-wider text-[#7C8BA0] mb-1" }, "Potential commission"), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-2xl text-[#3DD6F5] font-semibold" }, formatMWK(Math.round(totalCommissionPotential))))), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setShowSettings((s) => !s),
@@ -965,7 +868,8 @@ react-dom/cjs/react-dom-client.production.js:
   }
   // ---------- Site-wide helpers ----------
   function parseRoute() {
-    const raw = (window.location.hash || "#/").replace(/^#/, "") || "/";
+    let raw = (window.location.hash || "#/").replace(/^#/, "") || "/";
+    if (raw.charAt(0) !== "/") raw = "/"; // e.g. #access_token=... from an email link
     const path = raw.split("?")[0];
     const parts = path.split("/").filter(Boolean);
     let param = "";
@@ -981,6 +885,282 @@ react-dom/cjs/react-dom-client.production.js:
   const mapsEmbed = (loc) => "https://www.google.com/maps?q=" + encodeURIComponent(loc) + "&output=embed";
   const telHref = (n) => "tel:" + String(n).replace(/\s/g, "");
   const SITE_NAME = "Skippers Electronics & General Suppliers";
+
+  // ---------- Customer accounts + PRIVATE chat ----------
+  // Each chat is one row in "conversations" (one per listing and customer).
+  // The database rules (Row Level Security) only let that customer and the
+  // shop administrator read or write it. Nothing here relies on hiding things.
+  const CHAT_MAX = 1000;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function displayName(user) {
+    const meta = (user && user.user_metadata) || {};
+    const n = String(meta.full_name || "").trim();
+    if (n) return n.slice(0, 60);
+    return user && user.email ? user.email.split("@")[0].slice(0, 60) : "Customer";
+  }
+  function friendlyAuthError(e) {
+    const m = String((e && e.message) || "").toLowerCase();
+    if (m.includes("invalid login")) return "Wrong email or password.";
+    if (m.includes("not confirmed")) return "Please confirm your email first \u2014 open the link we sent (check spam too).";
+    if (m.includes("already registered") || m.includes("already been registered")) return "That email already has an account. Try signing in instead.";
+    if (m.includes("rate limit") || m.includes("too many") || m.includes("security purposes")) return "Too many attempts. Please wait a few minutes and try again.";
+    if (m.includes("password")) return String(e.message);
+    if (m.includes("fetch") || m.includes("network")) return "Could not reach the server. Check your connection and try again.";
+    return "Something went wrong. Please try again.";
+  }
+  function mergeMessages(prev, incoming) {
+    const map = new Map();
+    prev.concat(incoming).forEach((m) => map.set(m.id, m));
+    return Array.from(map.values()).sort((x, y) => new Date(x.created_at) - new Date(y.created_at));
+  }
+  function ChatThread({ conversation, createConversation, user }) {
+    const [conv, setConv] = useState(conversation);
+    const [messages, setMessages] = useState([]);
+    const [loading, setLoading] = useState(!!conversation);
+    const [error, setError] = useState("");
+    const [text, setText] = useState("");
+    const [sending, setSending] = useState(false);
+    const listRef = useRef(null);
+    const convId = conv ? conv.id : null;
+    useEffect(() => {
+      if (!convId) { setLoading(false); return; }
+      let alive = true;
+      setLoading(true);
+      supabase.from("messages").select("*").eq("conversation_id", convId).order("created_at", { ascending: true })
+        .then(({ data, error: err }) => {
+          if (!alive) return;
+          if (err) setError("Could not load this chat. Check your connection and try again.");
+          else setMessages((prev) => mergeMessages(prev, data || []));
+          setLoading(false);
+        })
+        .catch(() => { if (alive) { setError("Could not load this chat. Check your connection and try again."); setLoading(false); } });
+      const channel = supabase.channel("chat-" + convId)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "conversation_id=eq." + convId },
+          (payload) => { if (alive && payload && payload.new) setMessages((prev) => mergeMessages(prev, [payload.new])); })
+        .subscribe();
+      return () => { alive = false; supabase.removeChannel(channel); };
+    }, [convId]);
+    useEffect(() => {
+      if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+    }, [messages]);
+    const send = async () => {
+      const body = text.trim();
+      if (!body) return;
+      if (body.length > CHAT_MAX) { setError("Messages can be up to " + CHAT_MAX + " characters."); return; }
+      setSending(true);
+      setError("");
+      try {
+        let c = conv;
+        if (!c) { c = await createConversation(); setConv(c); }
+        const role = c.buyer_id === user.id ? "buyer" : "shop";
+        const { data, error: err } = await supabase.from("messages").insert({
+          conversation_id: c.id, listing_id: c.listing_id, listing_title: c.listing_title,
+          sender_id: user.id, sender_role: role, sender_name: role === "shop" ? "Skippers" : displayName(user), body
+        }).select().single();
+        if (err) throw err;
+        setText("");
+        setMessages((prev) => mergeMessages(prev, [data]));
+      } catch (e) {
+        console.error(e);
+        setError("Your message was not sent. Check your connection, make sure you are still signed in, and try again.");
+      }
+      setSending(false);
+    };
+    return h("div", { className: "sk-chat2" },
+      h("div", { className: "sk-msgs", ref: listRef, role: "log", "aria-live": "polite", "aria-label": "Conversation" },
+        loading ? h("p", { className: "sk-chat2__hint" }, "Loading messages\u2026")
+        : messages.length === 0 ? h("p", { className: "sk-chat2__hint" }, "No messages yet \u2014 say hello.")
+        : messages.map((m) => h("div", { key: m.id, className: "sk-msg " + (m.sender_id === user.id ? "sk-msg--me" : "sk-msg--them") },
+            h("span", { className: "sk-msg__who" }, m.sender_id === user.id ? "You" : (m.sender_name || "Skippers")),
+            h("p", { className: "sk-msg__body" }, m.body),
+            h("span", { className: "sk-msg__time" }, timeAgo(new Date(m.created_at).getTime()))))),
+      error && h("p", { className: "sk-chat2__error", role: "alert" }, error),
+      h("form", { className: "sk-chat2__form", onSubmit: (e) => { e.preventDefault(); if (!sending) send(); } },
+        h("label", { className: "sk-sr", htmlFor: "sk-chat-input" }, "Type a message"),
+        h("input", { id: "sk-chat-input", className: "sk-field", type: "text", value: text, maxLength: CHAT_MAX, autoComplete: "off",
+          onChange: (e) => setText(e.target.value), placeholder: "Type a message\u2026", disabled: sending }),
+        h("button", { type: "submit", className: "sk-btn sk-btn--primary", disabled: sending || !text.trim() }, sending ? "Sending\u2026" : "Send")));
+  }
+  function SignInPrompt({ text }) {
+    return h("div", null,
+      h("p", { className: "sk-chat2__hint" }, text),
+      h("a", { className: "sk-btn sk-btn--primary", href: "#/account" }, "Sign in or create account"));
+  }
+  function ListingChat({ listing, user, isAdmin, authChecked }) {
+    const [conv, setConv] = useState(null);
+    const [state, setState] = useState("loading");
+    const listingId = String(listing.id);
+    useEffect(() => {
+      if (!user || isAdmin) return;
+      let alive = true;
+      setState("loading");
+      supabase.from("conversations").select("*").eq("listing_id", listingId).eq("buyer_id", user.id).maybeSingle()
+        .then(({ data, error }) => {
+          if (!alive) return;
+          if (error) setState("error"); else { setConv(data || null); setState("ready"); }
+        })
+        .catch(() => { if (alive) setState("error"); });
+      return () => { alive = false; };
+    }, [user && user.id, isAdmin, listingId]);
+    const createConversation = async () => {
+      const row = { listing_id: listingId, listing_title: String(listing.title).slice(0, 200), buyer_id: user.id, buyer_name: displayName(user) };
+      let res = await supabase.from("conversations").insert(row).select().single();
+      if (res.error && res.error.code === "23505") {
+        res = await supabase.from("conversations").select("*").eq("listing_id", listingId).eq("buyer_id", user.id).single();
+      }
+      if (res.error) throw res.error;
+      return res.data;
+    };
+    let body;
+    if (!authChecked) body = h("p", { className: "sk-chat2__hint" }, "Checking sign-in\u2026");
+    else if (!user) body = h(SignInPrompt, { text: "Sign in (it's free) to message Skippers about this item. Your chat is private \u2014 only you and the shop can read it." });
+    else if (isAdmin) body = h("div", null, h("p", { className: "sk-chat2__hint" }, "You are signed in as the shop. Customer chats about this item are in your inbox."), h("a", { className: "sk-btn sk-btn--primary", href: "#/messages" }, "Open customer messages"));
+    else if (state === "loading") body = h("p", { className: "sk-chat2__hint" }, "Loading your chat\u2026");
+    else if (state === "error") body = h("p", { className: "sk-chat2__error", role: "alert" }, "Could not load your chat. Check your connection and refresh the page.");
+    else body = h(ChatThread, { key: conv ? conv.id : "new", conversation: conv, createConversation, user });
+    return h("div", { className: "sk-chatbox" },
+      h("p", { className: "sk-chatbox__title" }, "Private chat with Skippers"),
+      h("p", { className: "sk-chat2__note" }, "Only you and the shop can see this chat. For your safety, never share passwords or PINs."),
+      body);
+  }
+  function InboxPage({ user, isAdmin, authChecked }) {
+    const [items, setItems] = useState(null);
+    const [error, setError] = useState("");
+    const [selId, setSelId] = useState("");
+    const load = useCallback(async () => {
+      try {
+        const { data, error: err } = await supabase.from("conversations").select("*").order("last_message_at", { ascending: false });
+        if (err) throw err;
+        setError(""); setItems(data || []);
+      } catch (e) { setError("Could not load your chats. Check your connection and try again."); }
+    }, []);
+    useEffect(() => {
+      if (!user) return;
+      load();
+      const channel = supabase.channel("inbox-" + user.id)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => load())
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }, [user && user.id]);
+    if (!authChecked) return h("div", { className: "sk-container sk-page" }, h("p", null, "Checking sign-in\u2026"));
+    if (!user) return h("div", { className: "sk-container sk-page" }, h("h1", { className: "sk-h1" }, "Messages"), h(SignInPrompt, { text: "Sign in to see your private chats." }));
+    const sel = items && items.find((c) => c.id === selId);
+    return h("div", { className: "sk-container sk-page" },
+      h("h1", { className: "sk-h1" }, isAdmin ? "Customer messages" : "My messages"),
+      error && h("p", { className: "sk-chat2__error", role: "alert" }, error),
+      items === null && !error && h("p", null, "Loading\u2026"),
+      items && items.length === 0 && h("p", null, isAdmin ? "No customer chats yet." : "You have no chats yet. Open a product and tap Chat to message Skippers."),
+      items && items.length > 0 && h("div", { className: "sk-inbox" + (sel ? " has-sel" : "") },
+        h("ul", { className: "sk-inbox__list", "aria-label": "Conversations" },
+          items.map((c) => h("li", { key: c.id },
+            h("button", { type: "button", className: "sk-inbox__item", "aria-current": c.id === selId ? "true" : void 0, onClick: () => setSelId(c.id) },
+              h("strong", null, isAdmin ? (c.buyer_name || "Customer") : c.listing_title),
+              h("span", null, isAdmin ? c.listing_title : "Chat with Skippers"),
+              h("small", null, timeAgo(new Date(c.last_message_at).getTime())))))),
+        h("div", { className: "sk-inbox__thread" },
+          sel ? h("div", null,
+            h("button", { type: "button", className: "sk-btn sk-btn--ghost sk-inbox__all", onClick: () => setSelId("") }, "\u2190 All chats"),
+            h("h2", { className: "sk-inbox__title" }, (isAdmin ? (sel.buyer_name || "Customer") + " \u00b7 " : "") + sel.listing_title),
+            h(ChatThread, { key: sel.id, conversation: sel, user }))
+          : h("p", { className: "sk-chat2__hint" }, "Choose a chat to read it."))));
+  }
+  function AccountPage({ user, isAdmin, recovery, onRecoveryDone, onLogout }) {
+    const [mode, setMode] = useState("signin");
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState("");
+    const [info, setInfo] = useState("");
+    const submit = async (e) => {
+      e.preventDefault();
+      setError(""); setInfo("");
+      const mail = email.trim();
+      if (!EMAIL_RE.test(mail)) return setError("Please enter a valid email address.");
+      if (mode === "signup") {
+        if (!name.trim()) return setError("Please enter your name.");
+        if (name.trim().length > 60) return setError("Name can be up to 60 characters.");
+        if (password.length < 8) return setError("Password must be at least 8 characters.");
+      } else if (!password) return setError("Please enter your password.");
+      setBusy(true);
+      try {
+        if (mode === "signup") {
+          const { data, error: err } = await supabase.auth.signUp({ email: mail, password, options: { data: { full_name: name.trim() }, emailRedirectTo: window.location.origin + window.location.pathname } });
+          if (err) throw err;
+          if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) setError("That email already has an account. Try signing in instead.");
+          else if (!data.session) setInfo("Account created. We sent a confirmation link to " + mail + ". Open it, then come back here and sign in.");
+        } else {
+          const { error: err } = await supabase.auth.signInWithPassword({ email: mail, password });
+          if (err) throw err;
+        }
+      } catch (e2) { setError(friendlyAuthError(e2)); }
+      setBusy(false);
+    };
+    const forgot = async () => {
+      setError(""); setInfo("");
+      const mail = email.trim();
+      if (!EMAIL_RE.test(mail)) return setError("Type your email address above first, then tap Forgot password.");
+      setBusy(true);
+      try {
+        const { error: err } = await supabase.auth.resetPasswordForEmail(mail, { redirectTo: window.location.origin + window.location.pathname });
+        if (err) throw err;
+        setInfo("If an account exists for that email, we sent a link to reset the password.");
+      } catch (e2) { setError(friendlyAuthError(e2)); }
+      setBusy(false);
+    };
+    const saveNewPassword = async (e) => {
+      e.preventDefault();
+      setError(""); setInfo("");
+      if (password.length < 8) return setError("Password must be at least 8 characters.");
+      setBusy(true);
+      try {
+        const { error: err } = await supabase.auth.updateUser({ password });
+        if (err) throw err;
+        setPassword(""); setInfo("Password updated."); onRecoveryDone();
+      } catch (e2) { setError(friendlyAuthError(e2)); }
+      setBusy(false);
+    };
+    const messages = h("div", { className: "sk-account__msgs" },
+      error && h("p", { className: "sk-chat2__error", role: "alert" }, error),
+      info && h("p", { className: "sk-account__info", role: "status" }, info));
+    if (user && recovery) {
+      return h("div", { className: "sk-container sk-page sk-account" },
+        h("h1", { className: "sk-h1" }, "Choose a new password"),
+        h("form", { onSubmit: saveNewPassword },
+          h("label", { className: "sk-label", htmlFor: "sk-newpw" }, "New password (8+ characters)"),
+          h("input", { id: "sk-newpw", className: "sk-field", type: "password", autoComplete: "new-password", value: password, onChange: (e) => setPassword(e.target.value) }),
+          messages,
+          h("button", { type: "submit", className: "sk-btn sk-btn--primary", disabled: busy }, busy ? "Saving\u2026" : "Save password")));
+    }
+    if (user) {
+      return h("div", { className: "sk-container sk-page sk-account" },
+        h("h1", { className: "sk-h1" }, "Your account"),
+        h("p", null, "Signed in as ", h("strong", null, displayName(user)), " (", user.email, ")." + (isAdmin ? " You are the shop administrator." : "")),
+        info && h("p", { className: "sk-account__info", role: "status" }, info),
+        h("p", null, "Your account and chats are saved. Sign in again any time, on any phone, to see them."),
+        h("p", null,
+          h("a", { className: "sk-btn sk-btn--primary", href: "#/messages" }, isAdmin ? "Customer messages" : "My messages"), " ",
+          h("button", { type: "button", className: "sk-btn sk-btn--ghost", onClick: onLogout }, "Sign out")));
+    }
+    return h("div", { className: "sk-container sk-page sk-account" },
+      h("h1", { className: "sk-h1" }, mode === "signup" ? "Create your account" : "Sign in"),
+      h("p", { className: "sk-lead" }, "A free account lets you chat privately with Skippers. Only you and the shop can read your messages."),
+      h("div", { className: "sk-tabs", role: "tablist" },
+        h("button", { type: "button", role: "tab", "aria-selected": mode === "signin", className: "sk-tab" + (mode === "signin" ? " is-on" : ""), onClick: () => { setMode("signin"); setError(""); setInfo(""); } }, "Sign in"),
+        h("button", { type: "button", role: "tab", "aria-selected": mode === "signup", className: "sk-tab" + (mode === "signup" ? " is-on" : ""), onClick: () => { setMode("signup"); setError(""); setInfo(""); } }, "Create account")),
+      h("form", { onSubmit: submit, noValidate: true },
+        mode === "signup" && h("div", null,
+          h("label", { className: "sk-label", htmlFor: "sk-name" }, "Your name"),
+          h("input", { id: "sk-name", className: "sk-field", type: "text", autoComplete: "name", maxLength: 60, value: name, onChange: (e) => setName(e.target.value) })),
+        h("label", { className: "sk-label", htmlFor: "sk-email" }, "Email"),
+        h("input", { id: "sk-email", className: "sk-field", type: "email", autoComplete: "email", value: email, onChange: (e) => setEmail(e.target.value) }),
+        h("label", { className: "sk-label", htmlFor: "sk-pw" }, mode === "signup" ? "Password (8+ characters)" : "Password"),
+        h("input", { id: "sk-pw", className: "sk-field", type: "password", autoComplete: mode === "signup" ? "new-password" : "current-password", value: password, onChange: (e) => setPassword(e.target.value) }),
+        messages,
+        h("button", { type: "submit", className: "sk-btn sk-btn--primary", disabled: busy }, busy ? "Please wait\u2026" : mode === "signup" ? "Create account" : "Sign in"),
+        mode === "signin" && h("button", { type: "button", className: "sk-linkbtn", onClick: forgot, disabled: busy }, "Forgot password?")),
+      h("p", { className: "sk-chat2__note" }, "By creating an account you agree to our ", h("a", { href: "#/terms" }, "Terms"), " and ", h("a", { href: "#/privacy" }, "Privacy Policy"), "."));
+  }
 
   // ---------- Back button: in-app history tracking ----------
   // The site is a hash-routed single page, so every page lives at
@@ -1040,7 +1220,7 @@ react-dom/cjs/react-dom-client.production.js:
   }
 
   // ---------- Header, menu, footer ----------
-  function SiteHeader({ route, query, setQuery, navigate, isAdmin, pendingCount, menuOpen, setMenuOpen, onLogout }) {
+  function SiteHeader({ route, query, setQuery, navigate, isAdmin, user, pendingCount, menuOpen, setMenuOpen, onLogout }) {
     useEffect(() => {
       if (!menuOpen) return;
       const onKey = (e) => {
@@ -1068,12 +1248,14 @@ react-dom/cjs/react-dom-client.production.js:
           h("a", { href: "#/category/repair", "aria-current": current("category", "repair") }, "Repairs"),
           h("a", { href: "#/category/special-orders", "aria-current": current("category", "special-orders") }, "Special orders"),
           h("a", { href: "#/about", "aria-current": current("about") }, "About"),
-          h("a", { href: "#/location", "aria-current": current("location") }, "Location")
+          h("a", { href: "#/location", "aria-current": current("location") }, "Location"),
+          user && h("a", { href: "#/messages", "aria-current": current("messages") }, "Messages"),
+          h("a", { href: "#/account", "aria-current": current("account") }, user ? "Account" : "Sign in")
         ),
         h("a", { href: adminHref, className: "sk-admin-link", onClick: close },
           h(ShieldCheck, { size: 13 }), h("span", null, " Admin"),
           pendingCount > 0 && h("span", { className: "sk-badge", "aria-label": pendingCount + " pending" }, pendingCount)),
-        isAdmin && h("button", { className: "sk-signout", onClick: onLogout }, "Sign out"),
+        user && h("button", { className: "sk-signout", onClick: onLogout }, "Sign out"),
         h("button", { className: "sk-burger", "aria-label": menuOpen ? "Close menu" : "Open menu", "aria-expanded": menuOpen ? "true" : "false", "aria-controls": "sk-menu", onClick: () => setMenuOpen(!menuOpen) },
           menuOpen ? h(X, { size: 22 }) : h(Menu, { size: 22 }))
       ),
@@ -1090,8 +1272,10 @@ react-dom/cjs/react-dom-client.production.js:
         h("a", { href: "#/about", onClick: close }, "About us"),
         h("a", { href: "#/location", onClick: close }, "Shop location"),
         h("a", { href: "#/sell", onClick: close }, "Sell on Skippers"),
+        h("a", { href: "#/account", onClick: close }, user ? "My account" : "Sign in / Create account"),
+        user && h("a", { href: "#/messages", onClick: close }, isAdmin ? "Customer messages" : "My messages"),
         h("a", { href: adminHref, onClick: close }, isAdmin ? "Admin panel" : "Admin sign in"),
-        isAdmin && h("button", { className: "sk-menu__btn", onClick: () => { close(); onLogout(); } }, "Sign out")
+        user && h("button", { className: "sk-menu__btn", onClick: () => { close(); onLogout(); } }, "Sign out")
       )
     );
   }
@@ -1258,12 +1442,13 @@ react-dom/cjs/react-dom-client.production.js:
       h("h2", null, "2. Information we handle"),
       h("ul", null,
         h("li", null, h("strong", null, "Listings you submit: "), "your name as seller, item details, price and an optional photo."),
-        h("li", null, h("strong", null, "Chat messages: "), "the name you type and your message. Chat is public: anyone viewing that product can read it. Do not share private details in chat."),
+        h("li", null, h("strong", null, "Chat messages: "), "your message and the name on your account. A chat is private: only you and the shop administrator can read it. Please still avoid sharing passwords or PINs."),
         h("li", null, h("strong", null, "Reviews: "), "your name, rating and comment, shown publicly."),
+        h("li", null, h("strong", null, "Accounts: "), "if you create an account, your name, email address and password. The password is handled by our authentication provider and is not visible to us."),
         h("li", null, h("strong", null, "Staff sign-in: "), "the email address and password of site administrators, handled by our authentication provider."),
         h("li", null, h("strong", null, "Technical data: "), "our hosting provider may routinely log technical information such as IP address. ", h(NeedsConfirm, null, "Confirm what is logged")),
         h("li", null, h("strong", null, "WhatsApp and phone: "), "when you tap a WhatsApp or call link you leave this site and your number and messages are handled by WhatsApp or your carrier under their own terms.")),
-      h("p", null, "Buyer and seller accounts are being added. This policy will be updated before accounts are launched."),
+      h("p", null, "Seller accounts are not available yet. This policy will be updated before they are launched."),
       h("h2", null, "3. How we use it"),
       h("ul", null,
         h("li", null, "To show listings, chat and reviews on the site."),
@@ -1391,19 +1576,26 @@ react-dom/cjs/react-dom-client.production.js:
     const [toast, setToast] = useState(null);
     const [watching, setWatching] = useState(() => /* @__PURE__ */ new Set());
     const [isAdmin, setIsAdmin] = useState(false);
+    const [user, setUser] = useState(null);
+    const [recovery, setRecovery] = useState(false);
     useEffect(() => {
       let cancelled = false;
       const verify = async (session) => {
         if (!session || !session.user) {
-          if (!cancelled) setIsAdmin(false);
+          if (!cancelled) { setUser(null); setIsAdmin(false); }
           return;
         }
-        const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", session.user.id).single();
+        if (!cancelled) setUser(session.user);
+        // admin status comes from the database (profiles.is_admin); customers simply have no admin row
+        const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", session.user.id).maybeSingle();
         if (!cancelled) setIsAdmin(!!(profile && profile.is_admin));
       };
       supabase.auth.getSession().then(({ data }) => verify(data.session)).catch(() => {}).then(() => { if (!cancelled) setAuthChecked(true); });
-      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (!session) setIsAdmin(false);
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!session) { setUser(null); setIsAdmin(false); return; }
+        if (event === "PASSWORD_RECOVERY") { setRecovery(true); window.location.hash = "#/account"; }
+        // do not call the database inside this callback directly (can deadlock) - defer it
+        setTimeout(() => verify(session), 0);
       });
       return () => {
         cancelled = true;
@@ -1413,6 +1605,7 @@ react-dom/cjs/react-dom-client.production.js:
     const handleLogout = useCallback(async () => {
       await supabase.auth.signOut();
       setIsAdmin(false);
+      setUser(null);
       setView("browse");
       setToast("Logged out.");
     }, []);
@@ -1583,7 +1776,7 @@ react-dom/cjs/react-dom-client.production.js:
       }
       case "product":
         page = activeListing
-          ? h(ListingDetail, { listing: activeListing, onBack: () => navigate("/products"), isWatching: watching.has(activeListing.id), onToggleWatch: toggleWatch, shop })
+          ? h(ListingDetail, { listing: activeListing, user, isAdmin, authChecked, onBack: () => navigate("/products"), isWatching: watching.has(activeListing.id), onToggleWatch: toggleWatch, shop })
           : h("div", { className: "sk-container sk-page" }, h("h1", { className: "sk-h1" }, "Product not available"), h("p", null, "This product may have been removed."), h("p", null, h("a", { className: "sk-btn sk-btn--primary", href: "#/products" }, "Browse products")));
         break;
       case "about":
@@ -1597,6 +1790,12 @@ react-dom/cjs/react-dom-client.production.js:
         break;
       case "location":
         page = h(LocationPage, { shop });
+        break;
+      case "account":
+        page = h(AccountPage, { user, isAdmin, recovery, onRecoveryDone: () => setRecovery(false), onLogout: handleLogout });
+        break;
+      case "messages":
+        page = h(InboxPage, { user, isAdmin, authChecked });
         break;
       case "sell":
         page = h(SubmitListingForm, { onSubmit: handleSubmit, onCancel: () => navigate(isAdmin ? "/admin" : "/products"), isAdmin, shopName: "Skippers Electronics" });
@@ -1612,9 +1811,9 @@ react-dom/cjs/react-dom-client.production.js:
       h("style", null, "@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap'); .font-mono { font-family: 'JetBrains Mono', monospace; } * { -webkit-tap-highlight-color: transparent; }"),
       h("div", { className: "sk-bg-logo", "aria-hidden": "true" }),
       h("button", { className: "sk-skip", onClick: () => { const m = document.getElementById("main"); if (m) m.focus(); } }, "Skip to content"),
-      h(SiteHeader, { route, query, setQuery, navigate, isAdmin, pendingCount, menuOpen, setMenuOpen, onLogout: handleLogout }),
+      h(SiteHeader, { route, query, setQuery, navigate, isAdmin, user, pendingCount, menuOpen, setMenuOpen, onLogout: handleLogout }),
       h("main", { id: "main", className: "sk-main", tabIndex: -1 },
-        route.name !== "home" && h(BackButton, { size: route.name === "product" || (route.name === "admin" && isAdmin) ? "md" : (route.name === "sell" || route.name === "admin" || route.name === "admin-login") ? "sm" : "" }),
+        route.name !== "home" && h(BackButton, { size: route.name === "product" || (route.name === "admin" && isAdmin) ? "md" : (route.name === "sell" || route.name === "admin" || route.name === "admin-login" || route.name === "account") ? "sm" : "" }),
         page),
       h(SiteFooter, { shop }),
       toast && h("div", { className: "sk-toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#15233A] border border-[#3DD6F5]/40 text-[#E8EEF5] text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 z-20", role: "status" }, h(Check, { size: 14, className: "text-[#3DD6F5]" }), " ", toast)
