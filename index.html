@@ -1308,7 +1308,7 @@ react-dom/cjs/react-dom-client.production.js:
           h("nav", { "aria-label": "Legal" },
             h("h2", { className: "sk-footer__h" }, "Legal"),
             h("a", { href: "#/privacy" }, "Privacy Policy"),
-            h("a", { href: "#/terms" }, "Terms and Conditions")
+            h("a", { href: "#/terms" }, "Terms & Conditions")
           )
         ),
         h("p", { className: "sk-copy" }, "Copyright \u00a9 2025 Skippers Electronics & General Suppliers. All rights reserved.")
@@ -1408,13 +1408,6 @@ react-dom/cjs/react-dom-client.production.js:
   }
 
   // ---------- Information pages ----------
-  function NeedsConfirm({ children }) {
-    return h("mark", { className: "sk-needs" }, children || "Needs your confirmation");
-  }
-  function DraftNotice() {
-    return h("p", { className: "sk-draft" }, "Draft \u2014 not yet reviewed. Items marked ", h(NeedsConfirm, null), " must be confirmed by the business owner (and checked by a qualified person) before this page is relied on.");
-  }
-
   function AboutPage({ shop }) {
     return h("article", { className: "sk-container sk-page" },
       h("h1", { className: "sk-h1" }, "About us"),
@@ -1433,90 +1426,891 @@ react-dom/cjs/react-dom-client.production.js:
     );
   }
 
-  function PrivacyPage({ shop }) {
-    return h("article", { className: "sk-container sk-page" },
-      h("h1", { className: "sk-h1" }, "Privacy Policy"),
-      h(DraftNotice, null),
-      h("h2", null, "1. Who we are"),
-      h("p", null, SITE_NAME + ", " + shop.location + ". Contact: ", h("a", { href: "mailto:" + shop.email }, shop.email), "."),
-      h("h2", null, "2. Information we handle"),
-      h("ul", null,
-        h("li", null, h("strong", null, "Listings you submit: "), "your name as seller, item details, price and an optional photo."),
-        h("li", null, h("strong", null, "Chat messages: "), "your message and the name on your account. A chat is private: only you and the shop administrator can read it. Please still avoid sharing passwords or PINs."),
-        h("li", null, h("strong", null, "Reviews: "), "your name, rating and comment, shown publicly."),
-        h("li", null, h("strong", null, "Accounts: "), "if you create an account, your name, email address and password. The password is handled by our authentication provider and is not visible to us."),
-        h("li", null, h("strong", null, "Staff sign-in: "), "the email address and password of site administrators, handled by our authentication provider."),
-        h("li", null, h("strong", null, "Technical data: "), "our hosting provider may routinely log technical information such as IP address. ", h(NeedsConfirm, null, "Confirm what is logged")),
-        h("li", null, h("strong", null, "WhatsApp and phone: "), "when you tap a WhatsApp or call link you leave this site and your number and messages are handled by WhatsApp or your carrier under their own terms.")),
-      h("p", null, "Seller accounts are not available yet. This policy will be updated before they are launched."),
-      h("h2", null, "3. How we use it"),
-      h("ul", null,
-        h("li", null, "To show listings, chat and reviews on the site."),
-        h("li", null, "To review seller submissions before they appear."),
-        h("li", null, "To respond to enquiries about products, orders and repairs."),
-        h("li", null, "To prevent misuse of the site.")),
-      h("h2", null, "4. Payments"),
-      h("p", null, "This site does not take card payments. Customers pay using the mobile money or bank details we display, and confirm with us on WhatsApp. ", h(NeedsConfirm, null, "Confirm whether any payment provider will be added")),
-      h("h2", null, "5. Services that process data for us"),
-      h("ul", null,
-        h("li", null, "Supabase \u2014 database, sign-in and photo storage."),
-        h("li", null, "GitHub Pages \u2014 website hosting."),
-        h("li", null, "Google Fonts \u2014 your browser requests the site's fonts from Google."),
-        h("li", null, "WhatsApp \u2014 only when you use a WhatsApp link.")),
-      h("p", null, "Some of these services may store data outside Malawi. ", h(NeedsConfirm, null, "Confirm data locations and any legal requirements")),
-      h("h2", null, "6. Cookies and analytics"),
-      h("p", null, "The site does not use advertising cookies. A signed-in administrator's session is kept in the browser's storage. ", h(NeedsConfirm, null, "Confirm no analytics tools are added")),
-      h("h2", null, "7. Storage and protection"),
-      h("p", null, "Access to data is controlled through our database permissions. No online system is completely secure, so we cannot guarantee absolute security."),
-      h("h2", null, "8. How long we keep information"),
-      h("p", null, h(NeedsConfirm, null, "Confirm how long listings, chat messages and reviews are kept")),
-      h("h2", null, "9. Your choices"),
-      h("p", null, "You can ask us to see, correct or delete information you gave us, such as a listing, review or chat message, by emailing ", h("a", { href: "mailto:" + shop.email }, shop.email), ". ", h(NeedsConfirm, null, "Confirm response time")),
-      h("h2", null, "10. Children"),
-      h("p", null, "The site is intended for adults. ", h(NeedsConfirm, null, "Confirm age wording")),
-      h("h2", null, "11. Changes"),
-      h("p", null, "We may update this policy and will publish the updated version on this page."),
-      h("h2", null, "12. Contact"),
-      h("p", null, "Privacy questions: ", h("a", { href: "mailto:" + shop.email }, shop.email), ".")
+  // ---------- Legal pages: Terms & Conditions and Privacy Policy ----------
+  // The wording below is the owner's supplied text, held as data so it is not
+  // retyped inside layout code. To change a policy, edit the text here and keep
+  // the "Effective date" line in step. Contact details are fixed to the values
+  // given in the policies (they do not follow the editable shop settings).
+  const POLICY_EMAIL = "skipperselectronics92@gmail.com";
+  const POLICY_DOCS = {
+    "terms": {
+      "title": "Terms & Conditions",
+      "meta": [
+        "**Effective date:** 14 October 2026",
+        "**Business location:** Limbe Market, Blantyre, Malawi",
+        "**Contact email:** skipperselectronics92@gmail.com"
+      ],
+      "sections": [
+        {
+          "h": "1. Introduction",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Welcome to Skippers Electronics & General Suppliers. These Terms & Conditions govern the use of our website and the purchase of products and services offered through our business."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "By using the website or placing an order, you agree to these terms, subject to applicable consumer protection laws. Please read them before placing an order."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "2. Products and Services",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Skippers Electronics & General Suppliers provides electronics, smartphones, accessories, gadgets, spare parts and electronics repair services."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We aim to provide accurate product descriptions, prices, photographs and availability information. However, product availability, specifications and prices may change."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should confirm important product specifications, compatibility, condition and availability before completing a purchase."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Used, refurbished and new products must be identified accurately wherever applicable."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "3. Orders and Order Confirmation",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Placing an order or submitting an enquiry does not necessarily mean the order has been accepted."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We may contact customers to confirm product availability, quantities, prices, delivery arrangements and payment instructions."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should review their order details before confirming a purchase. We will communicate any material changes before proceeding."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We will acknowledge orders and fulfil them within the applicable legal requirements and any agreed delivery period."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "4. Manual Payment Policy",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Payments are handled manually through the payment methods specifically communicated and confirmed by Skippers Electronics & General Suppliers."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "The process is as follows:"
+              ]
+            },
+            {
+              "t": "ol",
+              "items": [
+                "The customer submits an order or contacts us to purchase a product or service.",
+                "We confirm availability, the total price and any applicable delivery charges.",
+                "We provide the approved payment instructions directly to the customer.",
+                "The customer makes payment using the agreed method.",
+                "We verify receipt of payment before treating the order as paid and arranging dispatch, collection or service commencement, unless otherwise agreed."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should not send money to an account or number that has not been confirmed through our official business communication channels."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "A screenshot, message or payment receipt supplied by a customer is not, by itself, confirmation that funds have been received. We verify payment against the relevant transaction record."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers must never provide account passwords, PINs, one-time verification codes or other confidential banking credentials to our staff."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Payment methods, account details and payment instructions will be provided at the time of the transaction. We do not promise automatic payment confirmation where payment is verified manually."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "5. Prices and Additional Charges",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Prices will be communicated before an order is finalised. Any applicable delivery charges, service charges or other costs will be disclosed before the customer commits to the transaction."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "If an advertised price or product description contains a material error, we will contact the customer to resolve the issue before proceeding."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "No undisclosed charge should be added to an order without an appropriate basis and the required customer agreement."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "6. Delivery and Collection",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Delivery arrangements, estimated delivery times, charges and collection options will be communicated when the order is confirmed."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Delivery estimates are not guarantees unless expressly agreed as such. If we cannot fulfil an order within the agreed or legally required period, we will communicate with the customer and provide the remedies required by applicable law."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers must provide accurate contact and delivery information. Any additional charges or consequences arising from incorrect details will be handled fairly and in accordance with applicable law."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "7. Returns, Cancellations and Refunds",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Customers may have rights to cancel an order, withdraw from a transaction, return goods or obtain a refund under applicable law."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "For online transactions, statutory withdrawal and cancellation rights may apply. Where a right to cancel or withdraw applies, we will honour the applicable legal requirements, including relevant refund deadlines."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should contact us promptly to request a cancellation, return or refund and provide the order details and reason for the request."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Where a refund is due, we will agree on an appropriate payment arrangement with the customer, subject to applicable law. We will not use this policy to remove any mandatory consumer rights."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Nothing in these terms excludes remedies available to customers for defective, misdescribed or non-conforming goods or services."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "8. Electronics Repair Services",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Before undertaking a repair, we will communicate the reported fault, proposed work and estimated charges where reasonably possible."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Additional work or charges arising during diagnosis should be explained to the customer before proceeding, where customer approval is required."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should back up important data before submitting devices for repair. Repair work can involve risks to stored data, and customers should disclose relevant device faults or damage."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We will take reasonable care when handling devices entrusted to us. Any liability, remedy or responsibility relating to loss or damage will be determined in accordance with applicable law and the circumstances of the service."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "9. Repair Warranty",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Skippers Electronics & General Suppliers offers a **7-day warranty on repairs**, subject to the specific repair work performed and applicable law."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "The repair warranty covers qualifying defects in the workmanship or repair service performed by us during the stated warranty period."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Unless otherwise required by law or agreed in writing, the repair warranty does not automatically cover unrelated faults, new physical damage, liquid damage, unauthorised repair attempts or misuse occurring after the repair."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should contact us promptly if a qualifying problem occurs within the warranty period. We may inspect the device to determine whether the reported issue is covered."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Any separate manufacturer warranty, product warranty or warranty for replacement parts will be communicated where applicable. The 7-day repair warranty does not replace any statutory consumer rights."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "10. Customer Accounts and Website Use",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Customers must provide accurate information when creating an account or placing an order."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers are responsible for keeping their login credentials confidential and for notifying us if they suspect unauthorised access."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Users must not attempt to disrupt the website, gain unauthorised access, submit fraudulent orders, impersonate other people or misuse the website."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We may restrict access where reasonably necessary to protect the website, customers or business, subject to applicable law."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "11. Reviews and Customer Submissions",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Customers may submit genuine reviews and feedback about products and services."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Reviews must not contain unlawful threats, fraudulent claims, impersonation, confidential information belonging to others or abusive content."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We may moderate or remove content that breaches these rules, but we will not represent a review as genuine or verified unless we have a reasonable basis to do so."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "12. Product Information and Intellectual Property",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Website text, branding, logos, photographs and other content may be protected by applicable intellectual property laws."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers may use the website for legitimate personal or business purchasing purposes. Website content must not be copied, republished or used commercially without appropriate permission, except where permitted by law."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Third-party product names and trademarks remain the property of their respective owners."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "13. Privacy",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Our collection and use of personal information are described in our Privacy Policy, which should be read together with these terms."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We will handle personal information in accordance with applicable privacy and data protection requirements."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "14. Complaints and Disputes",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Customers should first contact us using the official contact details below so that we can attempt to resolve a complaint."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Nothing in these terms prevents a customer from exercising statutory rights or contacting a relevant consumer protection or regulatory authority."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "15. Changes to These Terms",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "We may update these terms when our services, business practices or legal obligations change."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Updated terms will be published on the website with a revised effective date. Changes will not remove rights that customers already have under applicable law."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "16. Contact Information",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "**Skippers Electronics & General Suppliers**",
+                "Location: Limbe Market, Blantyre, Malawi",
+                "Email: skipperselectronics92@gmail.com"
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers may use these details to enquire about orders, payments, returns, repairs or complaints."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "meta": [
+        "**Effective date:** 14 October 2026",
+        "**Business location:** Limbe Market, Blantyre, Malawi",
+        "**Contact email:** skipperselectronics92@gmail.com"
+      ],
+      "sections": [
+        {
+          "h": "1. Introduction",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Skippers Electronics & General Suppliers respects the privacy of customers and website visitors."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "This Privacy Policy explains what personal information we may collect, why we use it, how it may be shared and how customers can contact us about their information."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Our actual data practices must match this policy. We will handle personal information in accordance with applicable data protection laws."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "2. Information We May Collect",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Depending on the features a customer uses, we may collect the following categories of information:"
+              ]
+            },
+            {
+              "t": "h3",
+              "x": "Contact information"
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Name",
+                "Email address",
+                "Telephone number",
+                "Delivery address, where applicable"
+              ]
+            },
+            {
+              "t": "h3",
+              "x": "Account information"
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Account identifiers",
+                "Information needed to manage customer accounts",
+                "Authentication-related records maintained by our website service providers"
+              ]
+            },
+            {
+              "t": "h3",
+              "x": "Orders and transactions"
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Products or services requested",
+                "Order quantities and prices",
+                "Order status and delivery information",
+                "Payment method selected",
+                "Transaction references and payment verification records"
+              ]
+            },
+            {
+              "t": "h3",
+              "x": "Reviews and communications"
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Product ratings and reviews",
+                "Enquiries, complaints and messages sent to us",
+                "Information customers voluntarily provide when requesting support"
+              ]
+            },
+            {
+              "t": "h3",
+              "x": "Technical information"
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Limited technical information that may be recorded by our website hosting, database or security services, such as access logs and diagnostic information, depending on the services and configuration in use."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We do not intend to collect more personal information than is reasonably necessary for the relevant purpose."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "3. How We Use Personal Information",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "We may use personal information to:"
+              ]
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Create and manage customer accounts.",
+                "Respond to enquiries and customer support requests.",
+                "Process and manage orders.",
+                "Verify manually submitted payments.",
+                "Arrange product collection or delivery.",
+                "Provide electronics repair services.",
+                "Manage customer reviews and feedback.",
+                "Detect suspected fraud, misuse or unauthorised access.",
+                "Maintain website security and functionality.",
+                "Keep business records and comply with legal obligations."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We will not claim to use information for a purpose that we do not actually carry out."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "4. Manual Payments and Financial Information",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Payments are handled manually using the payment methods communicated to customers when an order is placed."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We may retain transaction references, payment confirmations, amounts, dates and related records needed to verify payments, reconcile orders and maintain business records."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should not send us banking passwords, PINs or one-time authentication codes."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We do not intentionally request confidential banking login credentials. Any collection of additional financial information must be assessed against necessity, security and applicable legal requirements."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "5. Database, Hosting and Service Providers",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Our website may use third-party services to host website files, manage databases, authenticate users and provide related functionality."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Where implemented, these services may process or store personal information on our behalf or under their own applicable terms and privacy policies."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "For example, GitHub Pages may host the public website, while Supabase may provide database and authentication services."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "The information processed by each provider depends on the website's actual implementation and configuration. We will not claim that a service stores no information unless that has been verified."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Information may be processed or stored outside Malawi, depending on the service providers and their infrastructure. Any such processing or transfer must comply with applicable data protection requirements."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "6. Sharing of Personal Information",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "We do not sell customers' personal information as a business practice."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We may share relevant information where reasonably necessary with:"
+              ]
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Service providers that support our website or business operations.",
+                "Delivery or collection providers, where applicable.",
+                "Financial institutions or payment services involved in verifying or completing an agreed transaction.",
+                "Relevant authorities where disclosure is legally required.",
+                "Other parties where the customer has given appropriate permission or disclosure is otherwise permitted by law."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We aim to limit disclosures to the information necessary for the relevant purpose."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "7. Cookies and Similar Technologies",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Our website and its service providers may use cookies, browser storage or similar technologies for functions such as authentication, security and website operation."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "The technologies actually used depend on the website's implementation."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Where required by law, we will provide appropriate information and obtain any necessary consent before using non-essential tracking technologies."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "8. Data Security",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "We take reasonable steps to protect personal information against unauthorised access, disclosure, alteration, loss or misuse."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Security measures may include access controls, restricted administrative permissions, secure connections and appropriate database security settings."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "No online system can be guaranteed to be completely secure. We will respond to suspected data incidents in accordance with applicable legal requirements."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Customers should protect their passwords and notify us if they suspect unauthorised access to their accounts."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "9. Data Retention",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "We retain personal information for as long as reasonably necessary for the purposes described in this policy, including order fulfilment, customer support, payment reconciliation, security and legal recordkeeping."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Retention periods depend on the type of information and applicable legal obligations."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "When information is no longer required, we will take appropriate steps to delete it, anonymise it or otherwise dispose of it securely, subject to legal and operational requirements."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "10. Customer Privacy Rights",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Subject to applicable law, customers may have rights to:"
+              ]
+            },
+            {
+              "t": "ul",
+              "items": [
+                "Request access to their personal information.",
+                "Request correction of inaccurate or incomplete information.",
+                "Request deletion of information where legally applicable.",
+                "Object to or request restrictions on certain processing.",
+                "Withdraw consent where processing is based on consent.",
+                "Raise concerns or submit a complaint to the relevant authority."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Some requests may be subject to legal exceptions or recordkeeping obligations. We may need to verify a requester's identity before responding."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "11. Children's Privacy",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Our website is intended for customers who can lawfully enter into the relevant transactions. A parent or guardian should be involved where required by law."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We do not knowingly seek to collect children's personal information unnecessarily. If we discover that information has been collected unlawfully, we will take appropriate steps in accordance with applicable law."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "12. Third-Party Websites",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "Our website may contain links to third-party websites or services."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "We do not control the privacy practices of independent third parties. Customers should review the relevant privacy policies before providing information to those services."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "13. Changes to This Privacy Policy",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "We may update this Privacy Policy when our data practices, website features or legal obligations change."
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "The updated version will be published on our website with a revised effective date. Where required by law, we will provide additional notice or obtain consent."
+              ]
+            }
+          ]
+        },
+        {
+          "h": "14. Contact Us About Privacy",
+          "blocks": [
+            {
+              "t": "p",
+              "x": [
+                "For questions, requests or complaints concerning personal information, contact:"
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "**Skippers Electronics & General Suppliers**",
+                "Location: Limbe Market, Blantyre, Malawi",
+                "Email: skipperselectronics92@gmail.com"
+              ]
+            },
+            {
+              "t": "p",
+              "x": [
+                "Please describe your request clearly. Do not include passwords, PINs or other confidential authentication information in your message."
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  };
+  function policyInline(text) {
+    return String(text).split(/(\*\*[^*]+\*\*|skipperselectronics92@gmail\.com)/).filter(Boolean).map((part, i) => {
+      if (part.indexOf("**") === 0) return h("strong", { key: i }, part.slice(2, -2));
+      if (part === POLICY_EMAIL) return h("a", { key: i, href: "mailto:" + POLICY_EMAIL }, part);
+      return part;
+    });
+  }
+  function policyLines(lines) {
+    const out = [];
+    lines.forEach((line, i) => {
+      if (i > 0) out.push(h("br", { key: "br" + i }));
+      out.push(h("span", { key: "l" + i }, policyInline(line)));
+    });
+    return out;
+  }
+  function PolicyPage({ doc }) {
+    return h("article", { className: "sk-container sk-page sk-policy" },
+      h("h1", { className: "sk-h1" }, doc.title),
+      h("p", { className: "sk-policy-meta" }, policyLines(doc.meta)),
+      doc.sections.map((s, si) => h("section", { key: si },
+        h("h2", null, s.h),
+        s.blocks.map((b, bi) => {
+          if (b.t === "p") return h("p", { key: bi }, policyLines(b.x));
+          if (b.t === "h3") return h("h3", { key: bi }, b.x);
+          const tag = b.t === "ol" ? "ol" : "ul";
+          return h(tag, { key: bi }, b.items.map((it, ii) => h("li", { key: ii }, policyInline(it))));
+        })
+      ))
     );
   }
-
-  function TermsPage({ shop }) {
-    return h("article", { className: "sk-container sk-page" },
-      h("h1", { className: "sk-h1" }, "Terms and Conditions"),
-      h(DraftNotice, null),
-      h("h2", null, "1. Using this site"),
-      h("p", null, "By using this site you agree to these terms. Buyer and seller accounts are being added; these terms will be updated when accounts launch."),
-      h("h2", null, "2. Buyers"),
-      h("ul", null,
-        h("li", null, "Check item details and confirm availability with us before paying."),
-        h("li", null, "Inspect items when you collect them where possible.")),
-      h("h2", null, "3. Sellers and listings"),
-      h("ul", null,
-        h("li", null, "Listings are reviewed and may be declined or removed at our discretion."),
-        h("li", null, "Descriptions, prices and photos must be accurate and the item must be yours to sell."),
-        h("li", null, "Stolen, counterfeit, illegal or unsafe items are not allowed."),
-        h("li", null, "A commission of 10% applies when a seller's item is sold. ", h(NeedsConfirm, null, "Confirm commission rate and how it is collected"))),
-      h("h2", null, "4. Products, prices and availability"),
-      h("p", null, "Prices are in Malawi Kwacha (MWK). Items marked Sold are no longer available. Mistakes in descriptions or prices can happen and we may correct them."),
-      h("h2", null, "5. Orders and payment"),
-      h("p", null, "Payment is made by mobile money or bank transfer to the details shown on the site, followed by proof of payment on WhatsApp. An order is confirmed when we confirm it to you. ", h(NeedsConfirm, null, "Confirm the order and payment process")),
-      h("h2", null, "6. Cancellations, returns and refunds"),
-      h("p", null, h(NeedsConfirm, null, "The business has not yet provided its cancellation, return and refund policy")),
-      h("h2", null, "7. Repair services"),
-      h("p", null, "Repairs are quoted before work starts. Please back up your data before a repair. ", h(NeedsConfirm, null, "Confirm repair warranty terms and responsibility for data loss")),
-      h("h2", null, "8. Chat and reviews"),
-      h("p", null, "Keep chat and reviews honest and respectful. We may remove content that is abusive, unlawful or misleading."),
-      h("h2", null, "9. Limits of responsibility"),
-      h("p", null, "Items from other sellers are sold by those sellers. To the extent allowed by law we are not responsible for losses arising from their listings. ", h(NeedsConfirm, null, "Have this wording checked by a legal adviser")),
-      h("h2", null, "10. Changes to these terms"),
-      h("p", null, "We may update these terms and will publish the updated version on this page."),
-      h("h2", null, "11. Governing law and disputes"),
-      h("p", null, "These terms are governed by the laws of Malawi. Please contact us first to resolve any problem. ", h(NeedsConfirm, null, "Confirm governing law and dispute process")),
-      h("h2", null, "12. Contact"),
-      h("p", null, h("a", { href: "mailto:" + shop.email }, shop.email), ".")
-    );
-  }
+  function PrivacyPage() { return h(PolicyPage, { doc: POLICY_DOCS.privacy }); }
+  function TermsPage() { return h(PolicyPage, { doc: POLICY_DOCS.terms }); }
 
   function LocationPage({ shop }) {
     const [showMap, setShowMap] = useState(false);
@@ -1564,6 +2358,11 @@ react-dom/cjs/react-dom-client.production.js:
       window.addEventListener("hashchange", onHash);
       return () => window.removeEventListener("hashchange", onHash);
     }, []);
+    useEffect(() => {
+      const n = route.name;
+      const policyTitle = n === "terms" || n === "terms-and-conditions" ? "Terms & Conditions" : n === "privacy" || n === "privacy-policy" ? "Privacy Policy" : "";
+      document.title = policyTitle ? policyTitle + " | " + SITE_NAME : SITE_NAME;
+    }, [route.name]);
     useEffect(() => {
       document.documentElement.style.setProperty("--sk-logo", 'url("' + LOGO_SRC + '")');
     }, []);
@@ -1783,10 +2582,12 @@ react-dom/cjs/react-dom-client.production.js:
         page = h(AboutPage, { shop });
         break;
       case "privacy":
-        page = h(PrivacyPage, { shop });
+      case "privacy-policy":
+        page = h(PrivacyPage, null);
         break;
       case "terms":
-        page = h(TermsPage, { shop });
+      case "terms-and-conditions":
+        page = h(TermsPage, null);
         break;
       case "location":
         page = h(LocationPage, { shop });

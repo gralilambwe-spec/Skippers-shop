@@ -1257,3 +1257,31 @@ body {
   .sk-search-form { flex: 0 1 190px; }
   .sk-nav a { padding: 8px 8px; font-size: 0.92rem; }
 }
+
+
+/* 20. Policy pages (Terms & Conditions, Privacy Policy) ------- */
+.sk-page ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.sk-page h3 {
+  margin: 1.4em 0 0.3em;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sk-text);
+}
+.sk-policy-meta {
+  margin: 14px 0 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--sk-border-strong);
+  border-radius: var(--sk-radius-sm);
+  background: var(--sk-surface);
+  font-size: 0.92rem;
+}
+.sk-policy li {
+  margin: 0.25em 0;
+}
+.sk-policy p,
+.sk-policy li {
+  overflow-wrap: anywhere; /* long email addresses never cause sideways scroll */
+}
